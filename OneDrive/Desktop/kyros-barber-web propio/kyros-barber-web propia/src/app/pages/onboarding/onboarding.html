@@ -1,0 +1,178 @@
+<div class="onboarding-container">
+    <div class="header">
+        <h1>Configuración Inicial</h1>
+    </div>
+
+    <mat-stepper #stepper>
+        <!-- Step 1: Local Principal -->
+        <mat-step [stepControl]="branchForm">
+            <form [formGroup]="branchForm">
+                <ng-template matStepLabel>Local Principal</ng-template>
+                <div class="step-content">
+                    <h3>Nombre y Dirección</h3>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Nombre Sucursal</mat-label>
+                        <input matInput formControlName="nombre" placeholder="Ej. Barbería Kyros">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Dirección</mat-label>
+                        <input matInput formControlName="direccion" placeholder="Ej. Av. Principal 123">
+                    </mat-form-field>
+
+                    <div class="actions">
+                        <button mat-raised-button color="primary" class="full-width-btn"
+                            (click)="saveBranch(); stepper.next()" [disabled]="branchForm.invalid || loading">
+                            SIGUIENTE
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </mat-step>
+
+        <!-- Step 2: Horarios Generales -->
+        <mat-step [stepControl]="hoursForm">
+            <form [formGroup]="hoursForm">
+                <ng-template matStepLabel>Horarios Generales</ng-template>
+                <div class="step-content">
+                    <h3>Define apertura y cierre</h3>
+
+                    <h4>Lunes a Viernes</h4>
+                    <div class="row">
+                        <mat-form-field appearance="outline" class="half-width">
+                            <mat-label>Abre</mat-label>
+                            <input matInput type="time" formControlName="lunes_viernes_apertura">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" class="half-width">
+                            <mat-label>Cierra</mat-label>
+                            <input matInput type="time" formControlName="lunes_viernes_cierre">
+                        </mat-form-field>
+                    </div>
+
+                    <div class="toggle-container">
+                        <span>Abro fines de semana</span>
+                        <mat-slide-toggle formControlName="abrir_fines_semana" color="primary"></mat-slide-toggle>
+                    </div>
+
+                    <div *ngIf="hoursForm.get('abrir_fines_semana')?.value">
+                        <h4>Sábado y Domingo</h4>
+                        <div class="row">
+                            <mat-form-field appearance="outline" class="half-width">
+                                <mat-label>Abre</mat-label>
+                                <input matInput type="time" formControlName="sabado_domingo_apertura">
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="half-width">
+                                <mat-label>Cierra</mat-label>
+                                <input matInput type="time" formControlName="sabado_domingo_cierre">
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button mat-button matStepperPrevious>ATRÁS</button>
+                        <button mat-raised-button color="primary" (click)="saveHours(); stepper.next()"
+                            [disabled]="hoursForm.invalid || loading">
+                            SIGUIENTE
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </mat-step>
+
+        <!-- Step 3: Servicios -->
+        <mat-step [stepControl]="serviceForm" [optional]="true">
+            <form [formGroup]="serviceForm">
+                <ng-template matStepLabel>Servicios</ng-template>
+                <div class="step-content">
+                    <h3>¿Qué ofreces? (Ej: Corte)</h3>
+
+                    <div class="row">
+                        <mat-form-field appearance="outline" class="half-width">
+                            <mat-label>Nombre</mat-label>
+                            <input matInput formControlName="nombre">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" class="half-width">
+                            <mat-label>Precio</mat-label>
+                            <input matInput type="number" formControlName="precio">
+                        </mat-form-field>
+                    </div>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Minutos (ej: 30)</mat-label>
+                        <input matInput type="number" formControlName="duracion_minutos">
+                    </mat-form-field>
+
+                    <button mat-stroked-button color="primary" class="full-width-btn add-btn" (click)="addService()"
+                        [disabled]="serviceForm.invalid">
+                        + Agregar a la lista
+                    </button>
+
+                    <mat-list *ngIf="services.length > 0">
+                        <h4 mat-subheader>Servicios Agregados:</h4>
+                        <mat-list-item *ngFor="let service of services; let i = index">
+                            <span matListItemTitle>{{service.nombre}}</span>
+                            <span matListItemLine>${{service.precio}} - {{service.duracion_minutos}} min</span>
+                            <button mat-icon-button matListItemMeta (click)="removeService(i)">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </mat-list-item>
+                    </mat-list>
+
+                    <div class="actions">
+                        <button mat-button matStepperPrevious>ATRÁS</button>
+                        <button mat-raised-button color="primary" (click)="saveServices(); stepper.next()"
+                            [disabled]="services.length === 0 || loading">
+                            SIGUIENTE
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </mat-step>
+
+        <!-- Step 4: Equipo de Trabajo -->
+        <mat-step [stepControl]="employeeForm" [optional]="true">
+            <form [formGroup]="employeeForm">
+                <ng-template matStepLabel>Equipo de Trabajo</ng-template>
+                <div class="step-content">
+                    <h3>Agrega al menos un barbero</h3>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Nombre Barbero</mat-label>
+                        <input matInput formControlName="nombre">
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Especialidad</mat-label>
+                        <input matInput formControlName="especialidad">
+                    </mat-form-field>
+
+                    <button mat-stroked-button color="primary" class="full-width-btn add-btn" (click)="addEmployee()"
+                        [disabled]="employeeForm.invalid">
+                        + Agregar Barbero
+                    </button>
+
+                    <mat-list *ngIf="employees.length > 0">
+                        <h4 mat-subheader>Equipo:</h4>
+                        <mat-list-item *ngFor="let emp of employees; let i = index">
+                            <mat-icon matListItemIcon>person</mat-icon>
+                            <span matListItemTitle>{{emp.nombre}}</span>
+                            <span matListItemLine>{{emp.especialidad}}</span>
+                            <button mat-icon-button matListItemMeta (click)="removeEmployee(i)">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </mat-list-item>
+                    </mat-list>
+
+                    <div class="actions">
+                        <button mat-button matStepperPrevious>ATRÁS</button>
+                        <button mat-raised-button color="primary" (click)="saveEmployeesAndFinish()"
+                            [disabled]="employees.length === 0 || loading">
+                            FINALIZAR
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </mat-step>
+    </mat-stepper>
+</div>

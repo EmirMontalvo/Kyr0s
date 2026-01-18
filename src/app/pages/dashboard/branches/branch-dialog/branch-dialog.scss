@@ -1,0 +1,17 @@
+:host {
+    display: block;
+    background: white;
+    border-radius: 4px;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 10px;
+
+    h2[mat-dialog-title] {
+        margin: 0;
+        text-align: left;
+    }
+}

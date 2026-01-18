@@ -1,0 +1,36 @@
+<div class="dialog-header">
+    <h2 mat-dialog-title>{{ data.sucursalNombre }}</h2>
+    <button mat-icon-button mat-dialog-close>
+        <mat-icon>close</mat-icon>
+    </button>
+</div>
+<h3 mat-subheader>Horarios de Apertura</h3>
+
+<mat-dialog-content>
+    <div *ngIf="loading" class="loading-container">
+        <video autoplay loop [muted]="true" playsinline>
+            <source src="assets/loading.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <mat-list *ngIf="!loading">
+        <mat-list-item *ngFor="let horario of horarios">
+            <span matListItemTitle>{{ diasSemana[horario.dia_semana] }}</span>
+            <span matListItemLine>{{ formatTime(horario.hora_inicio) }} - {{ formatTime(horario.hora_fin) }}</span>
+            <button mat-icon-button color="warn" (click)="deleteHorario(horario.id)" matListItemMeta>
+                <mat-icon>delete</mat-icon>
+            </button>
+        </mat-list-item>
+
+        <div *ngIf="horarios.length === 0" class="empty-state">
+            <p>No hay horarios configurados.</p>
+        </div>
+    </mat-list>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-fab extended color="primary" (click)="openAddHourDialog()">
+        <mat-icon>add</mat-icon>
+        Agregar
+    </button>
+</mat-dialog-actions>

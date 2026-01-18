@@ -1,0 +1,133 @@
+<div class="chatbot-container">
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="header-content">
+            <img src="assets/images/logo-text.png" alt="Kyros" class="logo">
+            <span class="title">Asistente de Citas</span>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="messages-container" #messagesContainer>
+        <div *ngIf="loading" class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Cargando...</p>
+        </div>
+
+        <div *ngFor="let message of messages" class="message-wrapper"
+            [ngClass]="{'user': message.sender === 'user', 'bot': message.sender === 'bot'}">
+
+            <!-- Bot Avatar -->
+            <div class="avatar" *ngIf="message.sender === 'bot'">
+                <mat-icon>smart_toy</mat-icon>
+            </div>
+
+            <div class="message-bubble" [ngClass]="message.type">
+                <!-- Text Message -->
+                <div *ngIf="message.type === 'text'" [innerHTML]="message.content | markdown"></div>
+
+                <!-- Options Menu -->
+                <div *ngIf="message.type === 'services' && message.data?.showOptions" class="options-menu">
+                    <button mat-raised-button color="primary" (click)="showServices()">
+                        <mat-icon>content_cut</mat-icon>
+                        Ver Servicios
+                    </button>
+                </div>
+
+                <!-- Services Grid -->
+                <div *ngIf="message.type === 'services' && message.data?.services" class="services-grid">
+                    <div *ngFor="let service of message.data.services" class="service-card"
+                        [class.selected]="isServiceSelected(service.id)" (click)="toggleService(service)">
+                        <img *ngIf="service.imagen_url" [src]="service.imagen_url" [alt]="service.nombre"
+                            class="service-image">
+                        <div *ngIf="!service.imagen_url" class="service-placeholder">
+                            <mat-icon>content_cut</mat-icon>
+                        </div>
+                        <div class="service-info">
+                            <h4>{{ service.nombre }}</h4>
+                            <p class="price">${{ service.precio_base }}</p>
+                            <p class="duration">{{ service.duracion_aprox_minutos }} min</p>
+                        </div>
+                        <mat-icon class="check-icon" *ngIf="isServiceSelected(service.id)">check_circle</mat-icon>
+                    </div>
+
+                    <button mat-raised-button color="accent" class="confirm-services-btn"
+                        [disabled]="selectedServiceIds.size === 0" (click)="confirmServices()">
+                        Continuar con {{ selectedServiceIds.size }} servicio(s)
+                    </button>
+                </div>
+
+                <!-- Date Selector -->
+                <div *ngIf="message.type === 'datetime' && message.data?.dates" class="date-chips">
+                    <mat-chip-set>
+                        <mat-chip *ngFor="let date of message.data.dates" (click)="selectDate(date)"
+                            [highlighted]="selectedDate?.getTime() === date.getTime()">
+                            {{ date | date:'EEE d MMM':'':'es' }}
+                        </mat-chip>
+                    </mat-chip-set>
+                </div>
+
+                <!-- Time Slots -->
+                <div *ngIf="message.type === 'datetime' && message.data?.slots" class="time-slots">
+                    <button mat-stroked-button *ngFor="let slot of message.data.slots" (click)="selectTime(slot)">
+                        {{ slot }}
+                    </button>
+                </div>
+
+                <!-- Employee Selection -->
+                <div *ngIf="message.type === 'employees' && message.data?.employees" class="employees-list">
+                    <button mat-stroked-button *ngFor="let emp of message.data.employees" (click)="selectEmployee(emp)">
+                        <mat-icon>person</mat-icon>
+                        {{ emp.nombre }}
+                    </button>
+                    <button mat-stroked-button (click)="selectEmployee(null)">
+                        Sin preferencia
+                    </button>
+                </div>
+
+                <!-- Confirmation -->
+                <div *ngIf="message.type === 'confirmation'" class="confirmation-card">
+                    <div [innerHTML]="message.content | markdown"></div>
+                    <div class="confirmation-actions" *ngIf="bookingService.getState().step === 'confirm'">
+                        <button mat-raised-button color="primary" (click)="confirmBooking()" [disabled]="processing">
+                            <mat-icon>check</mat-icon>
+                            Confirmar Cita
+                        </button>
+                        <button mat-button (click)="startOver()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Avatar -->
+            <div class="avatar user-avatar" *ngIf="message.sender === 'user'">
+                <mat-icon>person</mat-icon>
+            </div>
+        </div>
+
+        <!-- Processing Indicator -->
+        <div *ngIf="processing" class="processing-indicator">
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area" *ngIf="bookingService.getState().step === 'customer_info'">
+        <mat-form-field appearance="outline" class="message-input">
+            <input matInput [(ngModel)]="userInput" placeholder="Escribe aquí..." (keyup.enter)="sendMessage()"
+                [disabled]="processing">
+        </mat-form-field>
+        <button mat-fab color="primary" (click)="sendMessage()" [disabled]="processing || !userInput.trim()">
+            <mat-icon>send</mat-icon>
+        </button>
+    </div>
+
+    <!-- Start Over Button (when done) -->
+    <div class="start-over" *ngIf="bookingService.getState().step === 'done'">
+        <button mat-raised-button color="primary" (click)="startOver()">
+            <mat-icon>refresh</mat-icon>
+            Nueva Cita
+        </button>
+    </div>
+</div>

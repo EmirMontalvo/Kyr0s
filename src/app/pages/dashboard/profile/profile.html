@@ -1,0 +1,146 @@
+<div class="profile-container">
+    <div class="loading-container" *ngIf="loading">
+        <video autoplay loop [muted]="true" playsinline>
+            <source src="assets/loading.mp4" type="video/mp4">
+        </video>
+    </div>
+    <mat-card>
+        <div class="header" [class.with-qr]="isBranchUser">
+            <div class="avatar-container">
+                <img [src]="avatarUrl || 'assets/default-avatar.svg'" alt="Avatar" class="avatar">
+                <button mat-mini-fab color="primary" class="edit-avatar-btn">
+                    <mat-icon>edit</mat-icon>
+                </button>
+            </div>
+
+            <!-- QR Code for branch users -->
+            <div class="qr-container" *ngIf="isBranchUser && qrCodeUrl">
+                <div class="qr-code">
+                    <img [src]="qrCodeUrl" alt="QR Code para chatbot">
+                </div>
+                <p class="qr-label">Escanea para agendar cita</p>
+                <button mat-stroked-button color="primary" (click)="downloadQR()">
+                    <mat-icon>download</mat-icon> Descargar QR
+                </button>
+            </div>
+
+            <h2>{{ isBranchUser ? 'Mi Sucursal' : 'Mi Perfil' }}</h2>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="updateProfile()">
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ isBranchUser ? 'Nombre de la Sucursal' : 'Nombre Completo' }}</mat-label>
+                <input matInput formControlName="nombre">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width" *ngIf="!isBranchUser">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('nombre_negocio')?.value">
+                <mat-label>Negocio</mat-label>
+                <input matInput formControlName="nombre_negocio" readonly>
+            </mat-form-field>
+
+            <!-- Phone number for branch users -->
+            <mat-form-field appearance="outline" class="full-width" *ngIf="isBranchUser">
+                <mat-label>Teléfono de la Sucursal</mat-label>
+                <input matInput formControlName="telefono" placeholder="Ej: 1234567890">
+                <mat-icon matSuffix>phone</mat-icon>
+            </mat-form-field>
+
+            <div class="actions">
+                <button mat-raised-button color="primary" type="submit" [disabled]="loading || form.invalid">
+                    {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+                </button>
+            </div>
+        </form>
+
+        <!-- Schedule Configuration (Branch Users Only) -->
+        <div *ngIf="isBranchUser" class="schedule-section">
+            <mat-divider></mat-divider>
+            <h3>Horarios de la Sucursal</h3>
+
+            <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()">
+                <!-- Weekdays Schedule -->
+                <div class="schedule-group">
+                    <h4>Días Laborables (Lunes - Viernes)</h4>
+                    <div class="days-checkboxes">
+                        <mat-checkbox *ngFor="let day of [1,2,3,4,5]"
+                            [checked]="scheduleForm.get('weekdays_active')?.value?.includes(day)"
+                            (change)="toggleDay('weekdays_active', day, $event.checked)">
+                            {{ getDayLabel(day) }}
+                        </mat-checkbox>
+                    </div>
+
+                    <div class="time-fields">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Apertura</mat-label>
+                            <input matInput type="time" formControlName="weekday_open">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Cierre</mat-label>
+                            <input matInput type="time" formControlName="weekday_close">
+                        </mat-form-field>
+                    </div>
+
+                    <div class="time-fields">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Inicio Descanso</mat-label>
+                            <input matInput type="time" formControlName="weekday_break_start">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Duración Descanso (min)</mat-label>
+                            <input matInput type="number" formControlName="weekday_break_duration">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <!-- Weekend Schedule -->
+                <div class="schedule-group">
+                    <h4>Fin de Semana</h4>
+                    <div class="days-checkboxes">
+                        <mat-checkbox *ngFor="let day of [6, 0]"
+                            [checked]="scheduleForm.get('weekend_active')?.value?.includes(day)"
+                            (change)="toggleDay('weekend_active', day, $event.checked)">
+                            {{ getDayLabel(day) }}
+                        </mat-checkbox>
+                    </div>
+
+                    <div class="time-fields">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Apertura</mat-label>
+                            <input matInput type="time" formControlName="weekend_open">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Cierre</mat-label>
+                            <input matInput type="time" formControlName="weekend_close">
+                        </mat-form-field>
+                    </div>
+
+                    <div class="time-fields">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Inicio Descanso</mat-label>
+                            <input matInput type="time" formControlName="weekend_break_start">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Duración Descanso (min)</mat-label>
+                            <input matInput type="number" formControlName="weekend_break_duration">
+                        </mat-form-field>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button mat-raised-button color="accent" type="submit" [disabled]="savingSchedule">
+                        {{ savingSchedule ? 'Guardando...' : 'Guardar Horarios' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </mat-card>
+</div>

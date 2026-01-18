@@ -1,0 +1,39 @@
+:host {
+    display: block;
+    background: white;
+    padding: 24px;
+    border-radius: 4px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 10px;
+
+    h2[mat-dialog-title] {
+        margin: 0;
+        text-align: left;
+    }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-height: 150px;
+
+    video {
+        width: 100px;
+        height: auto;
+    }
+}

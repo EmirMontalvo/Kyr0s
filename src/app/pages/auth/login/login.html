@@ -1,0 +1,49 @@
+<div class="login-container">
+  <mat-card>
+    <mat-card-header style="display: flex; justify-content: center; padding-bottom: 20px;">
+      <img src="assets/images/logo-text.png" alt="Kyros Barber" style="max-width: 200px; height: auto;">
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="Introduce tu correo">
+          <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+            Email inválido
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Contraseña</mat-label>
+          <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'"
+            placeholder="Introduce tu contraseña">
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="'Ocultar contraseña'" [attr.aria-pressed]="hidePassword" type="button">
+            <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+          <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+            La contraseña es requerida
+          </mat-error>
+        </mat-form-field>
+
+        <div class="actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading || loginForm.invalid">
+            {{ loading ? 'Cargando...' : 'Ingresar' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+    <mat-card-footer>
+      <p>¿No tienes cuenta? <a routerLink="/register">Regístrate aquí</a></p>
+    </mat-card-footer>
+  </mat-card>
+
+  <!-- Floating QR Scan Button -->
+  <button mat-fab class="qr-scan-fab" color="primary" (click)="openQrScanner()"
+    matTooltip="Escanear QR para agendar cita" matTooltipPosition="left">
+    <mat-icon>qr_code_scanner</mat-icon>
+  </button>
+
+  <!-- Hidden element for QR scanner -->
+  <div id="qr-reader-hidden" style="display: none;"></div>
+</div>

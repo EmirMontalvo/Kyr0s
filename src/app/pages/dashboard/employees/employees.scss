@@ -1,0 +1,38 @@
+@use '../shared/loading.scss';
+
+.employees-container {
+    padding: 20px;
+    position: relative;
+    min-height: 200px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+
+        button {
+            width: 100%;
+        }
+    }
+}
+
+.table-container {
+    overflow-x: auto;
+
+    table {
+        width: 100%;
+        min-width: 600px;
+    }
+}
+
+.mat-column-acciones {
+    width: 100px;
+    text-align: right;
+}

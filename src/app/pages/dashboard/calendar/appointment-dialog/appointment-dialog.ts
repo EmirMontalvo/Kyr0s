@@ -135,15 +135,16 @@ export class AppointmentDialog implements OnInit {
           ]);
         }
         // Otherwise, if branches exist and none selected, select the first one
+        // but show ALL clients since owner has "Todas las sucursales" active
         else if (this.sucursales.length > 0 && !this.form.get('sucursal_id')?.value) {
           const defaultBranchId = this.sucursales[0].id;
           this.form.patchValue({ sucursal_id: defaultBranchId });
 
-          // Re-load/Filter for the default branch
+          // Load services/employees/hours for default branch, but load ALL clients
           await Promise.all([
             this.loadServices(defaultBranchId),
             this.loadEmployees(defaultBranchId),
-            this.loadClients(defaultBranchId),
+            this.loadClients(), // No branch filter — show all clients
             this.loadBranchHours(defaultBranchId)
           ]);
         }
@@ -209,13 +210,18 @@ export class AppointmentDialog implements OnInit {
         this.form.patchValue({
           fecha: fecha,
           hora: this.formatTime(fecha),
+          sucursal_id: cita.sucursal_id,
+          servicios_ids: serviceIds,
           cliente_id: cita.cliente_id,
           nombre_cliente_manual: cita.nombre_cliente_manual || cita.clientes_bot?.nombre,
-          sucursal_id: cita.sucursal_id,
           empleado_id: cita.empleado_id,
-          servicios_ids: serviceIds,
           notas: cita.notas
-        });
+        }, { emitEvent: false });
+
+        // Filter employees by selected services after patching
+        if (serviceIds.length > 0) {
+          await this.filterEmployeesByServices(serviceIds);
+        }
       }
 
     } catch (error) {
@@ -226,8 +232,10 @@ export class AppointmentDialog implements OnInit {
   }
 
   private _filterClients(value: string): Cliente[] {
-    const filterValue = value.toLowerCase();
-    return this.clientes.filter(client => client.nombre.toLowerCase().includes(filterValue));
+    const filterValue = (value || '').toLowerCase();
+    return this.clientes.filter(client =>
+      client.nombre && client.nombre.toLowerCase().includes(filterValue)
+    );
   }
 
   async loadBranchHours(sucursalId: number) {
@@ -387,9 +395,9 @@ export class AppointmentDialog implements OnInit {
       .select('*')
       .eq('negocio_id', this.negocioId);
 
-    // Filter by branch if specified
     if (sucursalId) {
-      query = query.or(`sucursal_id.eq.${sucursalId},sucursal_id.is.null`);
+      // Only show clients assigned to the selected branch
+      query = query.eq('sucursal_id', sucursalId);
     }
 
     const { data } = await query.order('nombre');
@@ -587,7 +595,7 @@ export class AppointmentDialog implements OnInit {
         cliente_id: formVal.cliente_id,
         nombre_cliente_manual: null, // Always null as we enforce registered clients
         empleado_id: formVal.empleado_id || null,
-        estado: 'pendiente'
+        estado: 'pendiente_pago'
       };
 
       let citaId;
@@ -613,7 +621,8 @@ export class AppointmentDialog implements OnInit {
 
       const servicesToInsert = selectedServices.map(s => ({
         cita_id: citaId,
-        servicio_id: s.id
+        servicio_id: s.id,
+        precio_actual: s.precio_base
       }));
 
       if (servicesToInsert.length > 0) {

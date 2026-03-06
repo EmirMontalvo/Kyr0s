@@ -28,6 +28,12 @@
                 <td mat-cell *matCellDef="let element"> {{element.nombre}} </td>
             </ng-container>
 
+            <!-- Telefono Column -->
+            <ng-container matColumnDef="telefono">
+                <th mat-header-cell *matHeaderCellDef> Teléfono </th>
+                <td mat-cell *matCellDef="let element"> {{element.telefono || 'Sin teléfono'}} </td>
+            </ng-container>
+
             <!-- Direccion Column -->
             <ng-container matColumnDef="direccion">
                 <th mat-header-cell *matHeaderCellDef> Dirección </th>

@@ -7,15 +7,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { Sucursal } from '../../../../models';
 
 export interface BranchSelectorData {
-    sucursales: Sucursal[];
-    selectedBranchId: number | null;
+  sucursales: Sucursal[];
+  selectedBranchId: number | null;
 }
 
 @Component({
-    selector: 'app-branch-selector-dialog',
-    standalone: true,
-    imports: [CommonModule, MatDialogModule, MatButtonModule, MatListModule, MatIconModule],
-    template: `
+  selector: 'app-branch-selector-dialog',
+  standalone: true,
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatListModule, MatIconModule],
+  template: `
     <h2 mat-dialog-title>Filtrar por Sucursal</h2>
     <mat-dialog-content>
       <mat-selection-list [multiple]="false" (selectionChange)="onSelectionChange($event)">
@@ -33,10 +33,10 @@ export interface BranchSelectorData {
       <button mat-button (click)="onCancel()">Cancelar</button>
     </mat-dialog-actions>
   `,
-    styles: [`
+  styles: [`
     ::ng-deep .mat-mdc-dialog-container .mat-mdc-dialog-surface {
       border-radius: 16px !important;
-      background-color: #ffffff !important;
+      background-color: var(--dialog-bg) !important;
       padding: 10px;
     }
     mat-dialog-content {
@@ -46,17 +46,17 @@ export interface BranchSelectorData {
   `]
 })
 export class BranchSelectorDialog {
-    constructor(
-        public dialogRef: MatDialogRef<BranchSelectorDialog>,
-        @Inject(MAT_DIALOG_DATA) public data: BranchSelectorData
-    ) { }
+  constructor(
+    public dialogRef: MatDialogRef<BranchSelectorDialog>,
+    @Inject(MAT_DIALOG_DATA) public data: BranchSelectorData
+  ) { }
 
-    onSelectionChange(event: any): void {
-        const selectedValue = event.options[0].value;
-        this.dialogRef.close(selectedValue);
-    }
+  onSelectionChange(event: any): void {
+    const selectedValue = event.options[0].value;
+    this.dialogRef.close(selectedValue);
+  }
 
-    onCancel(): void {
-        this.dialogRef.close(undefined);
-    }
+  onCancel(): void {
+    this.dialogRef.close(undefined);
+  }
 }

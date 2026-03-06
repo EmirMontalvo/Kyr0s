@@ -4,7 +4,16 @@
     h2 {
         margin: 0 0 24px 0;
         font-weight: 500;
-        color: #1e293b;
+        color: var(--text-heading);
+    }
+
+    @media (max-width: 768px) {
+        padding: 12px 8px;
+
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+        }
     }
 }
 
@@ -20,8 +29,14 @@
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 24px;
 
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
     @media (max-width: 600px) {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 }
 
@@ -70,11 +85,16 @@
         align-self: flex-start;
         min-width: 200px;
         margin-bottom: 16px;
+
+        @media (max-width: 600px) {
+            min-width: unset;
+            width: 100%;
+        }
     }
 
     .no-data {
         padding: 40px;
-        color: #94a3b8;
+        color: var(--text-secondary);
         text-align: center;
 
         mat-icon {
@@ -93,16 +113,41 @@
             font-size: 0.85rem;
             opacity: 0.8;
         }
+
+        @media (max-width: 600px) {
+            padding: 24px 12px;
+
+            mat-icon {
+                font-size: 36px;
+                width: 36px;
+                height: 36px;
+            }
+        }
+    }
+
+    @media (max-width: 768px) {
+        mat-card-header {
+            margin-bottom: 8px;
+
+            mat-card-title {
+                font-size: 1rem;
+            }
+        }
+
+        mat-card-content {
+
+            ngx-charts-bar-vertical,
+            ngx-charts-bar-horizontal,
+            ngx-charts-pie-chart {
+                min-height: 250px;
+            }
+        }
     }
 }
 
 // Revenue Card Styles
 .revenue-card {
-    cursor: default;
-
-    &:hover {
-        transform: none;
-    }
+    cursor: pointer;
 
     .revenue-controls {
         margin-bottom: 16px;
@@ -119,10 +164,19 @@
         .period-label {
             font-size: 1rem;
             font-weight: 500;
-            color: #1e293b;
+            color: var(--text-heading);
             min-width: 200px;
             text-align: center;
             text-transform: capitalize;
+        }
+
+        @media (max-width: 600px) {
+            gap: 4px;
+
+            .period-label {
+                font-size: 0.85rem;
+                min-width: 150px;
+            }
         }
     }
 
@@ -146,6 +200,19 @@
             font-size: 1.8rem;
             font-weight: 600;
         }
+
+        @media (max-width: 600px) {
+            padding: 12px 16px;
+            margin-bottom: 16px;
+
+            .total-label {
+                font-size: 0.95rem;
+            }
+
+            .total-amount {
+                font-size: 1.4rem;
+            }
+        }
     }
 
     .revenue-chart {
@@ -153,6 +220,17 @@
         min-height: 300px;
 
         ngx-charts-bar-vertical {
+            width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            min-height: 200px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .branch-select {
+            min-width: unset;
             width: 100%;
         }
     }
@@ -165,7 +243,7 @@
     align-items: center;
     justify-content: center;
     padding: 80px 20px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     text-align: center;
 
     mat-icon {
@@ -179,7 +257,7 @@
     h3 {
         margin: 0 0 8px 0;
         font-size: 1.3rem;
-        color: #64748b;
+        color: var(--text-secondary);
     }
 
     p {
@@ -221,7 +299,7 @@
     display: flex;
     flex-direction: column;
     animation: scaleIn 0.2s ease-out;
-    background: white !important;
+    background: var(--bg-card) !important;
 }
 
 @keyframes scaleIn {
@@ -241,10 +319,10 @@
     top: 12px;
     right: 12px;
     z-index: 10;
-    background: #f1f5f9;
+    background: var(--bg-secondary);
 
     &:hover {
-        background: #e2e8f0;
+        background: var(--bg-input);
     }
 }
 
@@ -261,7 +339,7 @@
         margin: 0 0 24px 0;
         font-size: 1.5rem;
         font-weight: 500;
-        color: #1e293b;
+        color: var(--text-heading);
         text-align: center;
         width: 100%;
     }
@@ -302,5 +380,124 @@
             max-width: 100%;
             min-height: 250px;
         }
+    }
+
+    // Revenue fullscreen specific styles
+    &.revenue-fullscreen {
+        overflow-y: auto;
+
+        .revenue-controls {
+            margin-bottom: 16px;
+            align-self: center;
+        }
+
+        .period-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+
+            .period-label {
+                font-size: 1.1rem;
+                font-weight: 500;
+                color: var(--text-heading);
+                text-transform: capitalize;
+            }
+        }
+
+        .revenue-total {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            color: white;
+            max-width: 400px;
+
+            .total-label {
+                font-size: 1.1rem;
+            }
+
+            .total-amount {
+                font-size: 2rem;
+                font-weight: 600;
+            }
+        }
+
+        .revenue-chart {
+            width: 100%;
+            flex: 1;
+            min-height: 300px;
+
+            ngx-charts-bar-vertical {
+                width: 100%;
+                flex: 1;
+            }
+        }
+    }
+}
+
+// ============================================
+// NGX-CHARTS — Dark Mode Text Overrides
+// ============================================
+
+// Axis labels and tick text
+::ng-deep {
+    .ngx-charts {
+        text {
+            fill: var(--text-primary) !important;
+        }
+
+        .tick text {
+            fill: var(--text-secondary) !important;
+        }
+
+        .x.axis .tick text,
+        .y.axis .tick text {
+            fill: var(--text-secondary) !important;
+        }
+
+        .axis-label {
+            fill: var(--text-primary) !important;
+        }
+    }
+
+    // Gridlines
+    .ngx-charts .gridline-path {
+        stroke: var(--divider-color) !important;
+    }
+
+    // Legend text
+    .chart-legend .legend-labels .legend-label .legend-label-text {
+        color: var(--text-primary) !important;
+    }
+
+    .legend-title .legend-title-text {
+        color: var(--text-heading) !important;
+    }
+
+    // Pie chart labels
+    .ngx-charts .label-text,
+    .ngx-charts .pie-label {
+        fill: var(--text-primary) !important;
+    }
+
+    // Tooltip
+    .ngx-charts-tooltip-content {
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--divider-color) !important;
+    }
+
+    .ngx-charts-tooltip-content .tooltip-label {
+        color: var(--text-heading) !important;
+    }
+
+    .ngx-charts-tooltip-content .tooltip-val {
+        color: var(--text-primary) !important;
     }
 }

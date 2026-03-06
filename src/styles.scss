@@ -1,12 +1,7 @@
 // Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
 html {
-  // Define a custom palette based on the logo blue (approx #2196F3)
   $custom-primary: (
     50: #e3f2fd,
     100: #bbdefb,
@@ -112,24 +107,93 @@ $red-palette: (
   ));
 }
 
-body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
+// ============================================
+// DARK MODE — CSS Custom Properties
+// ============================================
 
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
-  margin: 0;
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-card: #ffffff;
+  --bg-input: #e0e0e0;
+  --bg-input-focus: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-heading: #333333;
+  --border-color: #000000;
+  --border-hover: #2196f3;
+  --toolbar-bg: #2196f3;
+  --toolbar-text: #ffffff;
+  --sidenav-bg: #ffffff;
+  --sidenav-text: inherit;
+  --sidenav-toolbar-bg: #ffffff;
+  --dropdown-bg: #ffffff;
+  --dropdown-hover: #f5f5f5;
+  --datepicker-bg: #ffffff;
+  --dialog-bg: #ffffff;
+  --divider-color: rgba(0, 0, 0, 0.12);
+  --hover-overlay: rgba(33, 150, 243, 0.05);
+  --active-link-bg: rgba(33, 150, 243, 0.25);
+  --active-link-color: #1565c0;
+  --btn-bg: white;
+  --btn-text: black;
+  --btn-border: black;
+  --icon-color: black;
+  --card-shadow: rgba(0, 0, 0, 0.15);
+  --link-color: #1976d2;
+  --error-color: #f44336;
+  --success-color: #4caf50;
+  --logo-filter: none;
 }
 
-/* You can add global styles to this file, and also import other style files */
+body.dark-mode {
+  color-scheme: dark;
+
+  --bg-primary: #111827;
+  --bg-secondary: #0f172a;
+  --bg-card: #1e293b;
+  --bg-input: #334155;
+  --bg-input-focus: #475569;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-heading: #f1f5f9;
+  --border-color: #475569;
+  --border-hover: #60a5fa;
+  --toolbar-bg: #1e293b;
+  --toolbar-text: #e2e8f0;
+  --sidenav-bg: #0f172a;
+  --sidenav-text: #e2e8f0;
+  --sidenav-toolbar-bg: #0f172a;
+  --dropdown-bg: #1e293b;
+  --dropdown-hover: #334155;
+  --datepicker-bg: #1e293b;
+  --dialog-bg: #1e293b;
+  --divider-color: rgba(255, 255, 255, 0.12);
+  --hover-overlay: rgba(96, 165, 250, 0.1);
+  --active-link-bg: rgba(96, 165, 250, 0.2);
+  --active-link-color: #60a5fa;
+  --btn-bg: #1e293b;
+  --btn-text: #e2e8f0;
+  --btn-border: #475569;
+  --icon-color: #e2e8f0;
+  --card-shadow: rgba(0, 0, 0, 0.4);
+  --link-color: #60a5fa;
+  --error-color: #f87171;
+  --success-color: #4ade80;
+  --logo-filter: brightness(0) invert(1);
+}
+
+// ============================================
+// BASE STYLES
+// ============================================
+
+body {
+  color-scheme: light;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font: var(--mat-sys-body-medium);
+  margin: 0;
+}
 
 html,
 body {
@@ -141,36 +205,39 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-// Global override for form fields to have a background color
+// ============================================
+// MATERIAL OVERRIDES WITH CSS VARIABLES
+// ============================================
+
+// Form fields
 .mat-mdc-form-field {
   .mat-mdc-text-field-wrapper {
-    background-color: #e0e0e0 !important; // Darker gray for better visibility
+    background-color: var(--bg-input) !important;
   }
 
-  // Change to white on focus for "turning to white" effect
   &.mat-focused .mat-mdc-text-field-wrapper {
-    background-color: #ffffff !important;
+    background-color: var(--bg-input-focus) !important;
   }
 }
 
-// Ensure dropdown options have a solid background
+// Dropdown options
 .mat-mdc-option {
-  background-color: #ffffff !important;
+  background-color: var(--dropdown-bg) !important;
+  color: var(--text-primary) !important;
 
   &:hover {
-    background-color: #f5f5f5 !important;
+    background-color: var(--dropdown-hover) !important;
   }
 }
 
 .mat-mdc-select-panel {
-  background-color: #ffffff !important;
+  background-color: var(--dropdown-bg) !important;
 }
 
-// Global Hover Animations
-// Buttons
-// Global Hover Animations
+// ============================================
+// BUTTON HOVER ANIMATIONS
+// ============================================
 
-// Standard Buttons (Raised, Stroked, FAB, etc.) - Excludes Icon Buttons
 .mat-mdc-button,
 .mat-mdc-raised-button,
 .mat-mdc-unelevated-button,
@@ -178,70 +245,72 @@ body {
 .mat-mdc-fab,
 .mat-mdc-mini-fab {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
-  border: 1px solid black !important; // Default black border
-  background-color: white !important; // Default white background
-  color: black !important; // Default black text/icon
+  border: 1px solid var(--btn-border) !important;
+  background-color: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
 
   .mat-icon {
-    color: black !important; // Ensure icon is black
+    color: var(--btn-text) !important;
     transition: color 0.2s ease !important;
   }
 
   &:hover {
     transform: scale(1.05);
     z-index: 1;
-    border-color: #2196f3 !important; // Blue border on hover
-    color: #2196f3 !important; // Blue text on hover
+    border-color: var(--border-hover) !important;
+    color: var(--border-hover) !important;
 
     .mat-icon {
-      color: #2196f3 !important; // Blue icon on hover
+      color: var(--border-hover) !important;
     }
   }
 }
 
-// Icon Buttons (Specific handling: No border, Icon color change)
+// Icon Buttons
 .mat-mdc-icon-button {
   transition: transform 0.2s ease, color 0.2s ease !important;
-  border: none !important; // No border for icon buttons
-  background-color: transparent !important; // Transparent background
-  color: black !important; // Default black icon
+  border: none !important;
+  background-color: transparent !important;
+  color: var(--icon-color) !important;
 
   .mat-icon {
-    color: black !important;
+    color: var(--icon-color) !important;
     transition: color 0.2s ease !important;
   }
 
   &:hover {
-    transform: scale(1.1); // Slightly larger scale for icons
-    color: #2196f3 !important; // Blue icon on hover
+    transform: scale(1.1);
+    color: var(--border-hover) !important;
 
     .mat-icon {
-      color: #2196f3 !important;
+      color: var(--border-hover) !important;
     }
-
-    // Optional: Add a subtle background on hover if desired, or keep transparent
-    // background-color: rgba(33, 150, 243, 0.1) !important; 
   }
 }
 
-// Generic Cards (including cita-card now)
+// Cards
 .mat-mdc-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
-  border: 1px solid black !important; // Default black border
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
   cursor: default;
 
   &:hover {
-    transform: scale(1.02); // Subtle increase
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important; // Enhanced shadow
-    border-color: #2196f3 !important; // Blue border on hover
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px var(--card-shadow) !important;
+    border-color: var(--border-hover) !important;
   }
 }
 
-// Custom Snackbar Styles
+// ============================================
+// SNACKBAR
+// ============================================
+
 .error-snackbar {
-  --mdc-snackbar-container-color: #d32f2f; // Red background
-  --mdc-snackbar-supporting-text-color: white; // White text
-  --mat-mdc-snack-bar-button-color: white; // White button text
+  --mdc-snackbar-container-color: #d32f2f;
+  --mdc-snackbar-supporting-text-color: white;
+  --mat-mdc-snack-bar-button-color: white;
 
   .mdc-snackbar__surface {
     background-color: #d32f2f !important;
@@ -254,24 +323,30 @@ body {
 
   .mat-mdc-snack-bar-action {
     color: white !important;
-    background-color: transparent !important; // Ensure button background is transparent
+    background-color: transparent !important;
   }
 
-  // Target the button inside the action specifically if needed
   .mat-mdc-button {
     background-color: transparent !important;
     color: white !important;
-    border: 1px solid white !important; // Optional: add border to make it look like a button
+    border: 1px solid white !important;
   }
 }
 
-// Fix Datepicker Transparency
+// ============================================
+// DATEPICKER
+// ============================================
+
 .mat-datepicker-content {
-  background-color: white !important;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3) !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 5px 15px var(--card-shadow) !important;
 }
 
-// QR Scanner Dialog Panel
+// ============================================
+// DIALOG PANELS
+// ============================================
+
 .qr-scanner-dialog-panel {
   .mat-mdc-dialog-container {
     padding: 0 !important;
@@ -282,5 +357,185 @@ body {
   .mat-mdc-dialog-surface {
     padding: 0 !important;
     border-radius: 16px !important;
+  }
+}
+
+.plan-info-dialog-panel {
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+  }
+
+  .mat-mdc-dialog-surface {
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background-color: var(--dialog-bg) !important;
+  }
+}
+
+// Global dialog dark mode support
+::ng-deep .mat-mdc-dialog-container .mat-mdc-dialog-surface {
+  background-color: var(--dialog-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+// ============================================
+// DARK MODE — Material component overrides
+// ============================================
+
+body.dark-mode {
+
+  // Mat form field labels and hints
+  .mat-mdc-form-field {
+    .mdc-floating-label {
+      color: var(--text-secondary) !important;
+    }
+
+    .mat-mdc-input-element {
+      color: var(--text-primary) !important;
+    }
+
+    .mdc-text-field--outlined .mdc-notched-outline__leading,
+    .mdc-text-field--outlined .mdc-notched-outline__notch,
+    .mdc-text-field--outlined .mdc-notched-outline__trailing {
+      border-color: var(--border-color) !important;
+    }
+  }
+
+  // Mat select
+  .mat-mdc-select-value {
+    color: var(--text-primary) !important;
+  }
+
+  .mat-mdc-select-arrow {
+    color: var(--text-secondary) !important;
+  }
+
+  // Mat divider
+  .mat-divider {
+    border-top-color: var(--divider-color) !important;
+  }
+
+  // Mat list items
+  .mat-mdc-list-item {
+    color: var(--text-primary) !important;
+  }
+
+  // Mat toolbar
+  .mat-toolbar {
+    color: var(--text-primary);
+  }
+
+  // Mat table
+  .mat-mdc-table {
+    background-color: var(--bg-card) !important;
+  }
+
+  .mat-mdc-header-cell {
+    color: var(--text-secondary) !important;
+    background-color: var(--bg-card) !important;
+  }
+
+  .mat-mdc-cell {
+    color: var(--text-primary) !important;
+  }
+
+  .mat-mdc-row:hover {
+    background-color: var(--hover-overlay) !important;
+  }
+
+  // Mat chip
+  .mat-mdc-chip {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+  }
+
+  // Mat tab
+  .mat-mdc-tab-header {
+    border-bottom-color: var(--divider-color) !important;
+  }
+
+  .mat-mdc-tab .mdc-tab__text-label {
+    color: var(--text-secondary) !important;
+  }
+
+  .mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+    color: var(--border-hover) !important;
+  }
+
+  // Autocomplete panel
+  .mat-mdc-autocomplete-panel {
+    background-color: var(--dropdown-bg) !important;
+  }
+
+  // Mat slide toggle
+  .mat-mdc-slide-toggle {
+    .mdc-switch__track {
+      background-color: var(--border-color) !important;
+    }
+  }
+
+  // Checkbox
+  .mat-mdc-checkbox .mdc-checkbox__background {
+    border-color: var(--text-secondary) !important;
+  }
+
+  // Paginator
+  .mat-mdc-paginator {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+  }
+
+  // Tooltip
+  .mat-mdc-tooltip .mdc-tooltip__surface {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+  }
+
+  // NGX-Charts text colors
+  .ngx-charts text {
+    fill: var(--text-primary) !important;
+  }
+
+  .ngx-charts .tick text {
+    fill: var(--text-secondary) !important;
+  }
+
+  .ngx-charts .gridline-path {
+    stroke: var(--divider-color) !important;
+  }
+
+  .chart-legend .legend-labels .legend-label .legend-label-text {
+    color: var(--text-primary) !important;
+  }
+
+  .legend-title .legend-title-text {
+    color: var(--text-heading) !important;
+  }
+
+  // NGX-Charts tooltip
+  .ngx-charts-tooltip-content {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .ngx-charts-tooltip-content .tooltip-label {
+    color: var(--text-heading) !important;
+  }
+
+  .ngx-charts-tooltip-content .tooltip-val {
+    color: var(--text-primary) !important;
+  }
+
+  // Mat button toggle (revenue controls)
+  .mat-button-toggle-appearance-standard {
+    background-color: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .mat-button-toggle-checked {
+    background-color: var(--active-link-bg) !important;
+    color: var(--active-link-color) !important;
   }
 }

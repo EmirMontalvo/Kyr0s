@@ -6,13 +6,19 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { ConfirmationDialog } from './shared/confirmation-dialog/confirmation-dialog';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { AuthService } from '../../services/auth';
 import { SupabaseService } from '../../services/supabase.service';
 import { SidenavService } from '../../services/sidenav.service';
+import { SubscriptionService } from '../../services/subscription.service';
+import { ThemeService } from '../../services/theme.service';
 import { NotificationsButton } from '../../components/notifications-button/notifications-button';
+import { AiChat } from './components/ai-chat/ai-chat';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,7 +31,10 @@ import { NotificationsButton } from '../../components/notifications-button/notif
     MatListModule,
     MatIconModule,
     MatButtonModule,
-    NotificationsButton
+    MatDialogModule,
+    MatSlideToggleModule,
+    NotificationsButton,
+    AiChat
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -54,13 +63,21 @@ export class Dashboard implements OnInit, OnDestroy {
     private breakpointObserver: BreakpointObserver,
     private authService: AuthService,
     private supabase: SupabaseService,
+    private subscriptionService: SubscriptionService,
     private sidenavService: SidenavService,
+    private dialog: MatDialog,
+    public themeService: ThemeService,
     public router: Router
   ) {
     // Check role from localStorage immediately (set during login)
     const userRole = localStorage.getItem('userRole');
     if (userRole === 'sucursal') {
-      this.menuItems = this.allMenuItems.filter(item => item.route !== '/dashboard/branches');
+      this.menuItems = this.allMenuItems
+        .filter(item => item.route !== '/dashboard/branches')
+        .map(item => item.route === '/dashboard/profile'
+          ? { ...item, label: 'Mi Sucursal', icon: 'storefront' }
+          : item
+        );
     } else {
       this.menuItems = [...this.allMenuItems];
     }
@@ -73,8 +90,12 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    // Check role and filter menu if needed
-    this.checkAndFilterMenu();
+    // Subscribe to user changes to handle initial load and updates
+    this.authService.user$.subscribe(user => {
+      if (user) {
+        this.checkAndFilterMenu(user);
+      }
+    });
 
     // Subscribe to sidenav visibility changes
     this.sidenavSub = this.sidenavService.sidenavHidden$.subscribe(hidden => {
@@ -93,29 +114,124 @@ export class Dashboard implements OnInit, OnDestroy {
     this.sidenavSub?.unsubscribe();
   }
 
-  private async checkAndFilterMenu() {
+  private async checkAndFilterMenu(user: any) {
+    console.log('Dashboard: checkAndFilterMenu started with user', user?.id);
     try {
-      const user = this.authService.currentUser;
-      if (!user) return;
+      if (!user) {
+        console.log('Dashboard: No user provided, returning.');
+        return;
+      }
 
-      const { data: profile } = await this.supabase.client
+      const { data: profile, error: profileError } = await this.supabase.client
         .from('usuarios_perfiles')
-        .select('rol')
+        .select('rol, negocio_id')
         .eq('id', user.id)
         .single();
 
-      // Only filter if user is a branch user
-      if (profile?.rol === 'sucursal') {
-        this.menuItems = this.menuItems.filter(item => item.route !== '/dashboard/branches');
+      console.log('Dashboard: Profile loaded:', profile, 'Error:', profileError);
+
+      // If profile doesn't exist, auto-create it (trigger may have failed during registration)
+      if (profileError || !profile) {
+        console.log('Dashboard: Profile not found, attempting to auto-create...');
+        const userName = user.user_metadata?.nombre_completo || user.user_metadata?.nombre || 'Usuario';
+        const { data: newProfile, error: createError } = await this.supabase.client
+          .from('usuarios_perfiles')
+          .upsert({
+            id: user.id,
+            nombre: userName,
+            rol: user.user_metadata?.rol || 'dueño',
+            avatar_url: user.user_metadata?.avatar_url || null
+          }, { onConflict: 'id' })
+          .select('rol, negocio_id')
+          .single();
+
+        console.log('Dashboard: Auto-created profile:', newProfile, 'Error:', createError);
+        if (createError || !newProfile) {
+          console.log('Dashboard: Could not create profile, redirecting to onboarding');
+          this.router.navigate(['/onboarding']);
+          return;
+        }
+        return this.processProfile(newProfile, user);
       }
+
+      await this.processProfile(profile, user);
     } catch (error) {
       console.error('Error loading profile:', error);
-      // Keep default menu (all items) on error
     }
   }
 
-  async logout() {
-    await this.authService.signOut();
-    this.router.navigate(['/login']);
+  private async processProfile(profile: any, user: any) {
+    // Check if user needs onboarding (Owner with no business)
+    if (profile?.rol !== 'sucursal') {
+      if (!profile?.negocio_id) {
+        console.log('Dashboard: No negocio_id, redirecting to onboarding');
+        this.router.navigate(['/onboarding']);
+        return;
+      }
+
+      // Handle Stripe return: if session_id is in the URL, update subscription to active
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+      if (sessionId) {
+        console.log('Dashboard: Stripe session_id detected, updating subscription to active');
+        await this.supabase.client
+          .from('negocio_suscripciones')
+          .update({ estado: 'active' })
+          .eq('negocio_id', profile.negocio_id);
+        // Clean the URL
+        window.history.replaceState({}, '', '/dashboard');
+      }
+
+      console.log('Dashboard: Checking subscription for negocio_id:', profile.negocio_id);
+      const { data: subData, error: subError } = await this.subscriptionService.getSubscriptionStatus(profile.negocio_id);
+
+      console.log('Dashboard: Subscription Status Result - Data:', JSON.stringify(subData), 'Error:', subError);
+
+      // If no subscription record found (PGRST116)
+      if (subError && subError.code === 'PGRST116') {
+        console.log('Dashboard: No subscription found (PGRST116), redirecting to renewal...');
+        this.router.navigate(['/renew-subscription']);
+        return;
+      }
+
+      // If subscription exists but status is not valid
+      if (subData) {
+        const validStatuses = ['active', 'trialing', 'trial', 'free'];
+        if (!validStatuses.includes(subData.estado)) {
+          console.log(`Dashboard: Subscription status '${subData.estado}' is not valid. Redirecting to renewal...`);
+          this.router.navigate(['/renew-subscription']);
+          return;
+        }
+      }
+
+      console.log('Dashboard: Subscription found and valid. Not redirecting.');
+    } else {
+      console.log('Dashboard: User is sucursal. Skipping subscription check.');
+    }
+
+    // Only filter if user is a branch user
+    if (profile?.rol === 'sucursal') {
+      this.menuItems = this.menuItems.filter(item => item.route !== '/dashboard/branches');
+    }
+  }
+
+  logout() {
+    const dialogRef = this.dialog.open(ConfirmationDialog, {
+      width: '350px',
+      data: {
+        title: 'Cerrar Sesión',
+        message: '¿Estás seguro de que deseas cerrar tu sesión?',
+        confirmText: 'Sí, Cerrar Sesión',
+        cancelText: 'Cancelar',
+        color: 'warn'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (result) {
+        await this.authService.signOut();
+        this.router.navigate(['/login']);
+      }
+    });
   }
 }

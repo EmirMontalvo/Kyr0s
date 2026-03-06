@@ -42,8 +42,9 @@ export class Statistics implements OnInit {
     selectedBranchForServices: number | null = null;
     branches: any[] = [];
     fullscreenChart: string | null = null;
+    selectedRevenueBranch: 'general' | number = 'general';
 
-    // Revenue chart data (for branch users)
+    // Revenue chart data (for owner and branch users)
     revenueViewMode: 'day' | 'week' | 'month' = 'day';
     revenueData: any[] = [];
     currentDate: Date = new Date();
@@ -110,6 +111,7 @@ export class Statistics implements OnInit {
             await this.loadBranches();
             await this.loadAppointmentsByBranch();
             await this.loadPopularServicesGeneral();
+            await this.loadRevenueData(); // Load revenue for owner too
         } else if (this.sucursalId) {
             await this.loadPopularServicesByBranch(this.sucursalId);
             await this.loadRevenueData();
@@ -223,6 +225,11 @@ export class Statistics implements OnInit {
         await this.loadServicesBySelectedBranch();
     }
 
+    async onRevenueBranchChange(value: 'general' | number) {
+        this.selectedRevenueBranch = value;
+        await this.loadRevenueData();
+    }
+
     async loadServicesBySelectedBranch() {
         if (this.selectedBranchForServices) {
             await this.loadPopularServicesByBranch(this.selectedBranchForServices);
@@ -263,18 +270,30 @@ export class Statistics implements OnInit {
     }
 
     async loadRevenueData() {
-        if (!this.sucursalId) return;
-
         const { startDate, endDate } = this.getDateRange();
         this.updatePeriodLabel();
 
-        const { data, error } = await this.supabase.client
+        let query = this.supabase.client
             .from('citas')
             .select('id, total_pagado, fecha_completado')
-            .eq('sucursal_id', this.sucursalId)
             .eq('estado', 'completada')
             .gte('fecha_completado', startDate)
             .lte('fecha_completado', endDate);
+
+        if (this.isOwner) {
+            if (this.selectedRevenueBranch === 'general') {
+                // All branches for this business
+                query = query.eq('negocio_id', this.negocioId!);
+            } else {
+                // Specific branch
+                query = query.eq('sucursal_id', this.selectedRevenueBranch);
+            }
+        } else {
+            if (!this.sucursalId) return;
+            query = query.eq('sucursal_id', this.sucursalId);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error loading revenue data:', error);

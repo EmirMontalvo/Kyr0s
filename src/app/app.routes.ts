@@ -11,17 +11,26 @@ import { Profile } from './pages/dashboard/profile/profile';
 import { Statistics } from './pages/dashboard/statistics/statistics';
 import { Reception } from './pages/reception/reception';
 import { ChatbotPage } from './pages/chatbot/chatbot';
+import { Landing } from './pages/landing/landing';
 import { authGuard } from './guards/auth-guard';
 
 import { Onboarding } from './pages/onboarding/onboarding';
 
 export const routes: Routes = [
+    // Landing page (public)
+    { path: '', component: Landing, pathMatch: 'full' },
+
     // Public chatbot route (no auth required)
     { path: 'chat/:sucursalId', component: ChatbotPage },
 
     { path: 'login', component: Login },
     { path: 'register', component: Register },
     { path: 'onboarding', component: Onboarding, canActivate: [authGuard] },
+    {
+        path: 'renew-subscription',
+        loadComponent: () => import('./pages/auth/renew-subscription/renew-subscription').then(m => m.RenewSubscriptionComponent),
+        canActivate: [authGuard]
+    },
     {
         path: 'dashboard',
         component: Dashboard,
@@ -42,6 +51,6 @@ export const routes: Routes = [
         component: Reception,
         canActivate: [authGuard]
     },
-    { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-    { path: '**', redirectTo: 'dashboard' }
+    { path: '**', redirectTo: '' }
 ];
+

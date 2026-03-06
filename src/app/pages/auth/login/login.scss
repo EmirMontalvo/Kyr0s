@@ -3,7 +3,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--bg-secondary);
   padding: 20px;
   position: relative;
 }
@@ -31,7 +31,7 @@ mat-card-footer {
   padding-bottom: 10px;
 
   a {
-    color: #1976d2; // Blue to match app theme
+    color: var(--link-color); // Blue to match app theme
     text-decoration: none;
     font-weight: bold;
   }

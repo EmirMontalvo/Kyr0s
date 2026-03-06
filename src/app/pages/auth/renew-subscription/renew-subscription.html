@@ -1,0 +1,69 @@
+<div class="renewal-container">
+    <div class="custom-header">
+        <div class="logo-container">
+            <img src="assets/images/logo-text.png" alt="Kyros Logo">
+        </div>
+        <button mat-icon-button (click)="exit()" class="close-btn" matTooltip="Salir">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <div class="content-wrapper">
+        <div class="renewal-content">
+            <div class="header-title">
+                <h1>Renovar Suscripción</h1>
+                <div class="subtitle-row">
+                    <p class="subtitle">Tu suscripción ha expirado o no es válida. Selecciona un plan para reactivar tu
+                        cuenta.</p>
+                    <button mat-icon-button class="info-btn" (click)="openPlanInfo()"
+                        matTooltip="Ver detalles de los planes">
+                        <mat-icon>info</mat-icon>
+                    </button>
+                </div>
+            </div>
+
+            <div class="plans-container">
+                <mat-card *ngFor="let plan of planes" class="plan-card" [class.selected]="selectedPlanId === plan.id"
+                    (click)="selectPlan(plan.id)">
+                    <mat-card-header>
+                        <mat-card-title>{{plan.nombre}}</mat-card-title>
+                        <mat-card-subtitle *ngIf="plan.precio_mxn > 0">${{plan.precio_mxn}} MXN/mes</mat-card-subtitle>
+                        <mat-card-subtitle *ngIf="plan.precio_mxn === 0">Gratis</mat-card-subtitle>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <p>{{plan.descripcion}}</p>
+                        <ul class="features-list">
+                            <li>
+                                <mat-icon>check_circle_outline</mat-icon>
+                                {{plan.limite_sucursales}} Sucursal(es)
+                            </li>
+                            <li>
+                                <mat-icon>check_circle_outline</mat-icon>
+                                {{plan.limite_empleados_por_sucursal ? plan.limite_empleados_por_sucursal + '
+                                Empleados/suc' : 'Empleados Ilimitados'}}
+                            </li>
+                        </ul>
+                    </mat-card-content>
+                    <div class="radio-indicator">
+                        <mat-icon>check</mat-icon>
+                    </div>
+                </mat-card>
+            </div>
+
+            <!-- Price Summary -->
+            <div class="price-summary" *ngIf="selectedPlanId">
+                <div class="summary-row total">
+                    <span>Total mensual</span>
+                    <span>${{getTotalPrice()}} MXN</span>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button mat-raised-button color="primary" class="full-width-btn" (click)="renewSubscription()"
+                    [disabled]="!selectedPlanId || loading">
+                    {{ loading ? 'PROCESANDO...' : 'RENOVAR Y ACTIVAR $' + getTotalPrice() + ' MXN' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

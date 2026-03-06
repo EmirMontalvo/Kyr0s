@@ -12,6 +12,8 @@ import { AuthService } from '../../../../services/auth';
 
 import { Servicio } from '../../../../models';
 
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+
 @Component({
   selector: 'app-employee-dialog',
   standalone: true,
@@ -23,7 +25,8 @@ import { Servicio } from '../../../../models';
     MatInputModule,
     MatButtonModule,
     MatSelectModule,
-    MatIconModule
+    MatIconModule,
+    MatSnackBarModule
   ],
   templateUrl: './employee-dialog.html',
   styleUrl: './employee-dialog.scss',
@@ -42,6 +45,7 @@ export class EmployeeDialog {
     private dialogRef: MatDialogRef<EmployeeDialog>,
     private supabase: SupabaseService,
     private authService: AuthService,
+    private snackBar: MatSnackBar,
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     this.isEdit = !!data?.id;
@@ -159,6 +163,35 @@ export class EmployeeDialog {
           .eq('id', user.id)
           .single();
         negocioId = profile?.negocio_id;
+      }
+
+      // Check Limit functionality
+      if (!this.isEdit) {
+        const sucursalId = this.form.value.sucursal_id;
+
+        // 1. Get Subscription Limit
+        const { data: sub, error: subError } = await this.supabase.client
+          .from('negocio_suscripciones')
+          .select('planes!inner(limite_empleados_por_sucursal, nombre)')
+          .eq('negocio_id', negocioId)
+          .single();
+
+        if (!subError && sub && sub.planes) {
+          const limit = (sub.planes as any).limite_empleados_por_sucursal;
+
+          if (limit !== null) { // If null, it's unlimited
+            // 2. Count existing employees in this branch
+            const { count, error: countError } = await this.supabase.client
+              .from('empleados')
+              .select('*', { count: 'exact', head: true })
+              .eq('sucursal_id', sucursalId);
+
+            if (!countError && (count || 0) >= limit) {
+              this.snackBar.open(`Has alcanzado el límite de empleados (${limit}) en esta sucursal con tu ${(sub.planes as any).nombre}.`, 'Entendido', { duration: 5000 });
+              return; // Stop execution
+            }
+          }
+        }
       }
 
       const employeeData = {

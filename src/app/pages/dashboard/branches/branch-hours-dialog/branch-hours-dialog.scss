@@ -1,6 +1,6 @@
 :host {
     display: block;
-    background: white;
+    background: var(--dialog-bg);
     padding: 24px;
     border-radius: 4px;
     max-height: 80vh;
@@ -22,7 +22,7 @@
 .empty-state {
     text-align: center;
     padding: 20px;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .loading-container {

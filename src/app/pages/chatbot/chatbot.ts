@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { MarkdownPipe } from '../../pipes/markdown.pipe';
     imports: [
         CommonModule,
         FormsModule,
+        RouterModule,
         MatCardModule,
         MatButtonModule,
         MatIconModule,
@@ -49,25 +50,85 @@ export class ChatbotPage implements OnInit, AfterViewChecked {
 
     constructor(
         private route: ActivatedRoute,
+        private router: Router,
         public bookingService: BookingService,
         private cdr: ChangeDetectorRef
     ) { }
 
     async ngOnInit() {
         const id = this.route.snapshot.paramMap.get('sucursalId');
+
+        // Handle payment return params
+        const paymentStatus = this.route.snapshot.queryParamMap.get('payment');
+        const citaId = this.route.snapshot.queryParamMap.get('cita_id');
+
         if (id) {
             this.sucursalId = parseInt(id, 10);
-            try {
-                await this.initializeChat();
-            } catch (error) {
-                console.error('Error initializing chat:', error);
-                this.addBotMessage('Lo siento, hubo un error al cargar. Por favor recarga la página.');
+
+            if (paymentStatus === 'success') {
+                // Verify session using localStorage
+                const pendingCitaId = localStorage.getItem('pending_checkout_cita_id');
+
+                if (citaId && pendingCitaId === citaId) {
+                    // Valid session
+                    localStorage.removeItem('pending_checkout_cita_id'); // Clear token
+                    await this.handlePaymentSuccess();
+                } else {
+                    // Invalid session - redirect to login
+                    console.warn('Unauthorized access to payment success page');
+                    this.router.navigate(['/login']);
+                }
+            } else if (paymentStatus === 'cancelled') {
+                // Payment was cancelled
+                await this.handlePaymentCancelled(citaId);
+            } else {
+                try {
+                    await this.initializeChat();
+                } catch (error) {
+                    console.error('Error initializing chat:', error);
+                    this.addBotMessage('Lo siento, hubo un error al cargar. Por favor recarga la página.');
+                }
             }
         } else {
             this.addBotMessage('Error: No se encontró la sucursal.');
         }
         this.loading = false;
         this.cdr.detectChanges();
+    }
+
+    private async handlePaymentSuccess() {
+        this.bookingService.confirmPaymentSuccess();
+        this.addBotMessage(`
+✅ **¡Pago procesado con éxito!**
+
+**¡Tu cita ha sido confirmada!**
+
+Recibirás un correo de confirmación con los detalles.
+
+¡Gracias por tu preferencia! 💈
+        `);
+    }
+
+    private async handlePaymentCancelled(citaId: string | null) {
+        if (citaId) {
+            // Cancel the pending appointment
+            this.bookingService.setState({ pendingCitaId: parseInt(citaId, 10) });
+            await this.bookingService.cancelPendingAppointment();
+        }
+
+        this.addBotMessage(`
+❌ **Pago cancelado**
+
+El proceso de pago fue cancelado. Tu cita no ha sido confirmada.
+
+Si deseas intentar de nuevo, puedes iniciar una nueva reservación.
+        `);
+
+        setTimeout(() => {
+            this.addBotMessage('¿Qué te gustaría hacer?', 'text');
+            this.addBotMessage('', 'services', { showOptions: true });
+            this.cdr.detectChanges();
+        }, 1000);
     }
 
     ngAfterViewChecked() {
@@ -157,6 +218,15 @@ export class ChatbotPage implements OnInit, AfterViewChecked {
         return this.selectedServiceIds.has(serviceId);
     }
 
+    // Details State
+    detailsDescription: string = '';
+    selectedFiles: File[] = [];
+    filePreviews: string[] = [];
+
+    // ... existing properties ...
+
+    // ... existing methods ...
+
     async confirmServices() {
         if (this.selectedServiceIds.size === 0) {
             this.addBotMessage('Por favor, selecciona al menos un servicio.');
@@ -165,18 +235,99 @@ export class ChatbotPage implements OnInit, AfterViewChecked {
 
         const selected = this.services.filter(s => this.selectedServiceIds.has(s.id));
         const names = selected.map(s => s.nombre).join(', ');
-        const total = selected.reduce((sum, s) => sum + s.precio_base, 0);
+        const subtotal = selected.reduce((sum, s) => sum + s.precio_base, 0);
+
+        // Calculate Stripe Mexico fees: 3.6% + $3.00 MXN
+        // Formula to pass fees to customer: total = (base + fixedFee) / (1 - percentFee)
+        const fixedFee = 3.00; // MXN
+        const percentFee = 0.036; // 3.6%
+        const totalWithFees = (subtotal + fixedFee) / (1 - percentFee);
+        const feeAmount = totalWithFees - subtotal;
 
         this.addUserMessage(`Quiero: ${names}`);
         this.bookingService.setState({
             selectedServices: selected,
+            step: 'details' // Step changed to details
+        });
+
+        this.addBotMessage(`¡Excelente! Has elegido: **${names}**
+
+💰 **Desglose de precio:**
+- Subtotal: **$${subtotal.toFixed(2)} MXN**
+- Comisión de procesamiento: **$${feeAmount.toFixed(2)} MXN**
+- **Total a pagar: $${totalWithFees.toFixed(2)} MXN**`);
+
+        setTimeout(() => {
+            this.addBotMessage(
+                '¿Deseas agregar algún detalle o foto de referencia? (Opcional)',
+                'details_input'
+            );
+            this.cdr.detectChanges();
+        }, 300);
+    }
+
+    onFileSelected(event: any) {
+        const files = event.target.files;
+        if (files) {
+            for (let i = 0; i < files.length; i++) {
+                if (this.selectedFiles.length >= 5) {
+                    // Limit 5
+                    break;
+                }
+                const file = files[i];
+                if (file.type.startsWith('image/')) {
+                    this.selectedFiles.push(file);
+                    // Preview
+                    const reader = new FileReader();
+                    reader.onload = (e: any) => {
+                        this.filePreviews.push(e.target.result);
+                        this.cdr.detectChanges();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+    }
+
+    removeFile(index: number) {
+        this.selectedFiles.splice(index, 1);
+        this.filePreviews.splice(index, 1);
+    }
+
+    async submitDetails() {
+        this.processing = true;
+        this.cdr.detectChanges();
+
+        let photoUrls: string[] = [];
+        if (this.selectedFiles.length > 0) {
+            try {
+                console.log('[Chatbot] Uploading files:', this.selectedFiles.length);
+                photoUrls = await this.bookingService.uploadFiles(this.selectedFiles);
+                console.log('[Chatbot] Upload complete, URLs:', photoUrls);
+            } catch (error) {
+                console.error('[Chatbot] Error uploading photos:', error);
+            }
+        }
+
+        console.log('[Chatbot] Setting state with photoUrls:', photoUrls, 'description:', this.detailsDescription);
+        this.bookingService.setState({
+            description: this.detailsDescription,
+            photoUrls: photoUrls,
             step: 'customer_info'
         });
 
-        this.addBotMessage(`¡Excelente! Has elegido: **${names}** (Total: $${total})`);
+        // Summary ofdetails
+        let msg = 'Continuar';
+        const parts = [];
+        if (this.detailsDescription) parts.push(`Nota: "${this.detailsDescription}"`);
+        if (this.selectedFiles.length > 0) parts.push(`${this.selectedFiles.length} fotos`);
+        if (parts.length > 0) msg = parts.join(', ');
+
+        this.addUserMessage(msg);
 
         setTimeout(() => {
             this.addBotMessage('Por favor, dime tu **nombre completo**:');
+            this.processing = false;
             this.cdr.detectChanges();
         }, 300);
     }
@@ -201,13 +352,22 @@ export class ChatbotPage implements OnInit, AfterViewChecked {
                         this.bookingService.setState({ customerName: input });
                         this.addBotMessage(`Gracias, **${input}**. Ahora ingresa tu **número de teléfono** (10 dígitos):`);
                     }
-                } else {
+                } else if (!state.customerPhone) {
                     // Validate phone: exactly 10 digits
                     const phoneDigits = input.replace(/\D/g, '');
                     if (phoneDigits.length !== 10) {
                         this.addBotMessage('Por favor, ingresa un **teléfono válido** (exactamente 10 dígitos):');
                     } else {
-                        this.bookingService.setState({ customerPhone: phoneDigits, step: 'datetime' });
+                        this.bookingService.setState({ customerPhone: phoneDigits });
+                        this.addBotMessage('Por último, ingresa tu **correo electrónico** (para enviar el recibo de pago):');
+                    }
+                } else {
+                    // Validate email
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(input)) {
+                        this.addBotMessage('Por favor, ingresa un **correo electrónico válido**:');
+                    } else {
+                        this.bookingService.setState({ customerEmail: input, step: 'datetime' });
                         this.addBotMessage('Perfecto. ¿Para qué **fecha** te gustaría la cita?');
                         this.showDateSelector();
                     }
@@ -345,6 +505,14 @@ export class ChatbotPage implements OnInit, AfterViewChecked {
         const services = state.selectedServices.map(s => s.nombre).join(', ');
         const total = state.selectedServices.reduce((sum, s) => sum + s.precio_base, 0);
 
+        let detailsHtml = '';
+        if (state.description) {
+            detailsHtml += `\n📝 **Nota:** ${state.description}`;
+        }
+        if (state.photoUrls && state.photoUrls.length > 0) {
+            detailsHtml += `\n📷 **Fotos:** ${state.photoUrls.length} referencias`;
+        }
+
         this.addBotMessage(`
 📋 **Resumen de tu cita:**
 
@@ -354,35 +522,50 @@ export class ChatbotPage implements OnInit, AfterViewChecked {
 🕐 **Hora:** ${state.selectedTime}
 ✂️ **Servicios:** ${services}
 👨‍🦱 **Atendido por:** ${state.selectedEmployeeName || 'Por asignar'}
-💰 **Total:** $${total}
+💰 **Total:** $${total}${detailsHtml}
         `, 'confirmation');
     }
 
     async confirmBooking() {
         this.processing = true;
-        this.addUserMessage('Confirmar cita');
+        this.addUserMessage('Confirmar y pagar');
         this.cdr.detectChanges();
 
         try {
+            // 1. Create pending appointment
             await this.bookingService.createAppointment();
-            this.bookingService.setState({ step: 'done' });
 
             const state = this.bookingService.getState();
-            const phoneMsg = state.sucursalTelefono
-                ? `📞 Teléfono: **${state.sucursalTelefono}**`
-                : '';
+            const total = this.bookingService.calculateTotal();
 
             this.addBotMessage(`
-✅ **¡Cita agendada con éxito!**
+💳 **Procesando pago...**
 
-Te esperamos en **${state.sucursalNombre}**.
-${phoneMsg}
+Se creará un cargo de **$${total} MXN** (+ comisión de procesamiento).
 
-Si necesitas cancelar o modificar tu cita, comunícate con la sucursal.
-
-¡Gracias por elegirnos! 💈
+Serás redirigido a la página de pago segura de Stripe.
             `);
+
+            this.cdr.detectChanges();
+
+            // 2. Initiate payment and redirect
+            const paymentResult = await this.bookingService.initiatePayment();
+
+            if (paymentResult && paymentResult.url) {
+                // Save pending cita ID to localStorage for security check upon return
+                if (state.pendingCitaId) {
+                    localStorage.setItem('pending_checkout_cita_id', state.pendingCitaId.toString());
+                }
+
+                // Redirect to Stripe Checkout
+                window.location.href = paymentResult.url;
+            } else {
+                // Payment initiation failed - cancel the pending appointment
+                await this.bookingService.cancelPendingAppointment();
+                this.addBotMessage('❌ Hubo un error al procesar el pago. Por favor intenta de nuevo.');
+            }
         } catch (error: any) {
+            console.error('Error in confirmBooking:', error);
             this.addBotMessage(`❌ Hubo un error: ${error.message}. Por favor intenta de nuevo.`);
         }
 
@@ -397,6 +580,9 @@ Si necesitas cancelar o modificar tu cita, comunícate con la sucursal.
         this.availableSlots = [];
         this.employees = [];
         this.selectedDate = null;
+        this.detailsDescription = '';
+        this.selectedFiles = [];
+        this.filePreviews = [];
         this.initializeChat();
     }
 }

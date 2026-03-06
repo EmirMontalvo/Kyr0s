@@ -1,6 +1,6 @@
 :host {
     display: block;
-    background: white;
+    background: var(--dialog-bg);
     border-radius: 4px;
 }
 
@@ -13,5 +13,110 @@
     h2[mat-dialog-title] {
         margin: 0;
         text-align: left;
+    }
+}
+
+.stripe-section {
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+
+    .section-title {
+        margin: 0 0 4px;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+    }
+
+    .section-subtitle {
+        margin: 0 0 16px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .stripe-status-box {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 16px;
+        background: var(--surface-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+
+        &.connected {
+            border-color: rgba(16, 185, 129, 0.45);
+            background: rgba(16, 185, 129, 0.05);
+
+            .stripe-icon-wrap {
+                background: rgba(16, 185, 129, 0.12);
+
+                mat-icon {
+                    color: #10b981;
+                }
+            }
+        }
+
+        .stripe-top-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .stripe-icon-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.12);
+
+            mat-icon {
+                font-size: 28px;
+                width: 28px;
+                height: 28px;
+                line-height: 28px;
+                color: #f59e0b;
+            }
+        }
+
+        .status-texts {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+
+            .status-title {
+                margin: 0 0 4px;
+                font-weight: 600;
+                font-size: 0.95rem;
+                color: var(--text-primary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .status-desc {
+                margin: 0;
+                font-size: 0.82rem;
+                color: var(--text-secondary);
+                line-height: 1.5;
+                overflow-wrap: break-word;
+                word-break: normal;
+            }
+        }
+
+        .stripe-action-row {
+            display: flex;
+            justify-content: flex-end;
+
+            .stripe-action-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+        }
     }
 }

@@ -1,0 +1,525 @@
+// Variables
+$primary: #3b82f6;
+$primary-dark: #2563eb;
+$bg-color: var(--bg-secondary);
+$card-bg: var(--bg-card);
+$text-main: var(--text-heading);
+$text-secondary: var(--text-secondary);
+$success: #10b981;
+
+// Global box-sizing
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.renewal-container {
+    min-height: 100vh;
+    min-height: 100dvh; // Dynamic viewport height for mobile
+    width: 100%;
+    max-width: 100vw;
+    background-color: $bg-color;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+    display: flex;
+    flex-direction: column;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+// Header
+.custom-header {
+    background-color: color-mix(in srgb, var(--bg-card) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    height: 70px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+
+    .logo-container {
+        height: 100%;
+        display: flex;
+        align-items: center;
+
+        img {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
+        }
+    }
+
+    .close-btn {
+        position: absolute;
+        right: 1.5rem;
+        color: $text-secondary;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+        background-color: rgba(0, 0, 0, 0.05); // Make it slightly visible by default
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        mat-icon {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        &:hover {
+            color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.15); // Stronger red bg
+            transform: scale(1.1); // Scale up instead of rotate
+        }
+    }
+}
+
+.content-wrapper {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+    overflow-x: hidden;
+}
+
+.renewal-content {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 0.5rem;
+    text-align: center;
+}
+
+.header-title {
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.6s ease-out;
+    padding: 0 1rem;
+
+    h1 {
+        font-size: 2.5rem;
+        color: $text-main;
+        font-weight: 800;
+        margin: 0 0 1rem;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+
+    p {
+        color: $text-secondary;
+        font-size: 1.125rem;
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .subtitle-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap; // Wrap on very small screens
+        margin-top: 0.5rem;
+
+        .info-btn {
+            color: $primary;
+            transform: scale(0.9);
+            opacity: 0.8;
+            transition: all 0.2s ease;
+            height: 32px;
+            width: 32px;
+            line-height: 32px;
+
+            mat-icon {
+                font-size: 20px;
+            }
+
+            &:hover {
+                opacity: 1;
+                transform: scale(1.1);
+                background-color: rgba($primary, 0.1);
+            }
+        }
+    }
+}
+
+// Plans Grid
+.plans-container {
+    display: grid;
+    // Use min() to ensure cards don't exceed container width on small screens
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+    padding: 0;
+    animation: fadeInUp 0.8s ease-out;
+    justify-content: center;
+    width: 100%;
+}
+
+.plan-card {
+    cursor: pointer;
+    background: $card-bg;
+    border-radius: 24px;
+    border: 2px solid transparent; // Reserve space for border
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    text-align: left;
+    height: 100%;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+
+    // Smooth shadow
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.05),
+        0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+    &:hover {
+        transform: translateY(-6px);
+        box-shadow:
+            0 20px 25px -5px rgba(0, 0, 0, 0.1),
+            0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border-color: rgba($primary, 0.3);
+    }
+
+    &.selected {
+        border-color: $primary;
+        background-color: color-mix(in srgb, var(--border-hover) 10%, var(--bg-card)); // Slightly lighter blue bg
+        box-shadow:
+            0 0 0 4px rgba($primary, 0.15),
+            0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+        .radio-indicator {
+            background-color: $primary;
+            border-color: $primary;
+            color: white;
+            transform: scale(1.1);
+        }
+    }
+
+    mat-card-header {
+        margin-bottom: 1.5rem;
+        padding: 0;
+        display: block; // Reset material default
+    }
+
+    mat-card-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: $text-main;
+        margin-bottom: 0.5rem !important;
+        letter-spacing: -0.02em;
+    }
+
+    mat-card-subtitle {
+        color: $primary;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.05em;
+        margin-top: 0.5rem;
+        display: block;
+    }
+
+    mat-card-content {
+        flex: 1; // Pushes content to fill space
+        padding: 0;
+
+        p {
+            margin-bottom: 1.5rem;
+            color: $text-secondary;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            padding-top: 1.5rem;
+
+            li {
+                padding: 0.5rem 0;
+                color: $text-main;
+                font-weight: 500;
+                font-size: 0.95rem;
+                display: flex;
+                align-items: center;
+
+                mat-icon {
+                    color: $success;
+                    margin-right: 0.75rem;
+                    font-size: 20px;
+                    width: 20px;
+                    height: 20px;
+                }
+            }
+        }
+    }
+
+    .radio-indicator {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        background: var(--bg-card);
+
+        mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            opacity: 0; // Hide check by default
+            transition: opacity 0.2s;
+        }
+    }
+
+    &.selected .radio-indicator mat-icon {
+        opacity: 1; // Show check when selected
+    }
+}
+
+.actions {
+    max-width: 400px;
+    width: 100%;
+    margin: 1rem auto 0;
+    padding: 0 1rem;
+    animation: fadeInUp 1s ease-out;
+
+    .full-width-btn {
+        width: 100%;
+        height: 56px;
+        font-size: 1.1rem;
+        border-radius: 56px; // Pill shape
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        box-shadow: 0 4px 15px rgba($primary, 0.4);
+        transition: all 0.3s ease;
+        background: $primary;
+
+        &:not(:disabled):hover {
+            transform: translateY(-2px);
+            background: $primary-dark;
+            box-shadow: 0 10px 20px rgba($primary, 0.5);
+        }
+
+        &:disabled {
+            background-color: #d1d5db;
+            box-shadow: none;
+            color: #9ca3af;
+        }
+    }
+}
+
+// Animations
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate3d(0, -20px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 20px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+// Responsive Breakpoints
+@media (max-width: 768px) {
+    .renewal-container {
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .custom-header {
+        height: 56px;
+        padding: 0 1rem;
+        position: sticky;
+        top: 0;
+
+        .logo-container img {
+            height: 26px;
+        }
+
+        .close-btn {
+            right: 0.75rem;
+            width: 36px;
+            height: 36px;
+
+            mat-icon {
+                font-size: 22px;
+            }
+        }
+    }
+
+    .content-wrapper {
+        padding: 1rem 0.75rem 2rem;
+    }
+
+    .header-title {
+        margin-bottom: 1.5rem;
+        padding: 0 0.5rem;
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+    }
+
+    // Single column on mobile
+    .plans-container {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .plan-card {
+        padding: 1.25rem;
+        border-radius: 16px;
+
+        mat-card-header {
+            margin-bottom: 1rem;
+        }
+
+        mat-card-title {
+            font-size: 1.25rem;
+        }
+
+        mat-card-subtitle {
+            font-size: 0.8rem;
+        }
+
+        mat-card-content {
+            p {
+                font-size: 0.85rem;
+                margin-bottom: 1rem;
+            }
+
+            .features-list {
+                padding-top: 1rem;
+
+                li {
+                    font-size: 0.85rem;
+                    padding: 0.35rem 0;
+
+                    mat-icon {
+                        font-size: 18px;
+                        width: 18px;
+                        height: 18px;
+                        margin-right: 0.5rem;
+                    }
+                }
+            }
+        }
+
+        .radio-indicator {
+            top: 1rem;
+            right: 1rem;
+            width: 22px;
+            height: 22px;
+
+            mat-icon {
+                font-size: 14px;
+                width: 14px;
+                height: 14px;
+            }
+        }
+    }
+
+    .actions {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0 0.5rem;
+        position: sticky;
+        bottom: 0;
+        background: linear-gradient(to top, $bg-color 80%, transparent);
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+
+        .full-width-btn {
+            height: 50px;
+            font-size: 0.95rem;
+            border-radius: 50px;
+        }
+    }
+}
+
+// Extra small screens (< 380px)
+@media (max-width: 380px) {
+    .header-title h1 {
+        font-size: 1.3rem;
+    }
+
+    .plan-card {
+        padding: 1rem;
+
+        mat-card-title {
+            font-size: 1.1rem;
+        }
+    }
+}
+
+
+.price-summary {
+    max-width: 400px;
+    margin: 1.5rem auto;
+    padding: 1rem 1.5rem;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 12px;
+    text-align: left;
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.95rem;
+        color: $text-secondary;
+
+        &.total {
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: 700;
+            color: $text-main;
+            font-size: 1.1rem;
+        }
+    }
+}

@@ -1,0 +1,66 @@
+<h2 mat-dialog-title>
+    <mat-icon>info</mat-icon>
+    Información de Planes
+</h2>
+
+<mat-dialog-content>
+    <div class="info-section">
+        <h3>📊 Comparativa de Planes</h3>
+        <table class="plans-table">
+            <thead>
+                <tr>
+                    <th>Característica</th>
+                    <th>Gratuito</th>
+                    <th>Básico</th>
+                    <th>Avanzado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Precio mensual</td>
+                    <td>Gratis (7 días)</td>
+                    <td>$219 MXN</td>
+                    <td>$499 MXN</td>
+                </tr>
+                <tr>
+                    <td>Sucursales</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>6</td>
+                </tr>
+                <tr>
+                    <td>Empleados por sucursal</td>
+                    <td>2</td>
+                    <td>4</td>
+                    <td>8</td>
+                </tr>
+                <tr>
+                    <td>Asistente IA</td>
+                    <td>❌</td>
+                    <td>❌</td>
+                    <td>✅</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="info-section">
+        <h3>✅ Todos los planes incluyen</h3>
+        <ul class="common-features">
+            <li>Sistema de reservas para clientes</li>
+            <li>Calendario de citas en tiempo real</li>
+            <li>Gestión de servicios y empleados</li>
+            <li>Estadísticas de ingresos</li>
+            <li>Actualizaciones automáticas</li>
+            <li>Pagos con Stripe</li>
+        </ul>
+    </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-raised-button color="primary" (click)="close()">
+        Entendido
+    </button>
+</mat-dialog-actions>

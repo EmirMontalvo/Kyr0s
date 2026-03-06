@@ -16,12 +16,32 @@ export class AuthService {
       this._session.next(session);
       this._user.next(session?.user ?? null);
     });
+
+    // Auto-refresh session when user returns from sleep/tab switch
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.refreshSession();
+      }
+    });
   }
 
   async loadSession() {
     const { data } = await this.supabase.client.auth.getSession();
-    this._session.next(data.session);
-    this._user.next(data.session?.user ?? null);
+    if (data.session) {
+      this._session.next(data.session);
+      this._user.next(data.session.user ?? null);
+    } else {
+      // Try to refresh if no valid session found (e.g. after sleep)
+      await this.refreshSession();
+    }
+  }
+
+  private async refreshSession() {
+    const { data } = await this.supabase.client.auth.refreshSession();
+    if (data.session) {
+      this._session.next(data.session);
+      this._user.next(data.session.user ?? null);
+    }
   }
 
   get session$(): Observable<Session | null | undefined> {

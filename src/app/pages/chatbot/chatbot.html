@@ -5,6 +5,9 @@
             <img src="assets/images/logo-text.png" alt="Kyros" class="logo">
             <span class="title">Asistente de Citas</span>
         </div>
+        <button mat-icon-button class="close-btn" routerLink="/login" aria-label="Cerrar">
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
     <!-- Messages Container -->
@@ -55,6 +58,52 @@
                         [disabled]="selectedServiceIds.size === 0" (click)="confirmServices()">
                         Continuar con {{ selectedServiceIds.size }} servicio(s)
                     </button>
+                </div>
+
+                <!-- Details Input -->
+                <div *ngIf="message.type === 'details_input'" class="confirmation-card">
+                    <div class="details-content">
+                        <p class="bot-text">{{message.content}}</p>
+
+                        <mat-form-field appearance="outline" class="full-width-input"
+                            style="width: 100%; margin-top: 8px;">
+                            <mat-label>Descripción (Opcional)</mat-label>
+                            <textarea matInput [(ngModel)]="detailsDescription" rows="3"
+                                placeholder="Ej. Corte escolar con fade bajo..."></textarea>
+                        </mat-form-field>
+
+                        <div class="photos-section" style="margin: 8px 0;">
+                            <p style="margin: 0 0 8px 0; font-size: 0.9em; color: #64748b;">Fotos de referencia (Máx 5):
+                            </p>
+
+                            <div class="photo-uploader">
+                                <button mat-stroked-button color="primary" (click)="fileInput.click()" type="button">
+                                    <mat-icon>add_photo_alternate</mat-icon>
+                                    Agregar Fotos
+                                </button>
+                                <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" hidden
+                                    multiple>
+                            </div>
+
+                            <div class="photo-previews"
+                                style="display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; margin-top: 8px;">
+                                <div class="preview-item" *ngFor="let preview of filePreviews; let i = index"
+                                    style="position: relative; flex-shrink: 0;">
+                                    <img [src]="preview"
+                                        style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                    <button mat-icon-button (click)="removeFile(i)" color="warn"
+                                        style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; line-height: 24px;">
+                                        <mat-icon style="font-size: 16px;">close</mat-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button mat-raised-button color="primary" style="width: 100%; margin-top: 8px;"
+                            (click)="submitDetails()" [disabled]="processing">
+                            Continuar
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Date Selector -->
@@ -114,13 +163,15 @@
 
     <!-- Input Area -->
     <div class="input-area" *ngIf="bookingService.getState().step === 'customer_info'">
-        <mat-form-field appearance="outline" class="message-input">
-            <input matInput [(ngModel)]="userInput" placeholder="Escribe aquí..." (keyup.enter)="sendMessage()"
-                [disabled]="processing">
-        </mat-form-field>
-        <button mat-fab color="primary" (click)="sendMessage()" [disabled]="processing || !userInput.trim()">
-            <mat-icon>send</mat-icon>
-        </button>
+        <div class="input-wrapper">
+            <mat-form-field appearance="outline" class="message-input">
+                <input matInput [(ngModel)]="userInput" placeholder="Escribe aquí..." (keyup.enter)="sendMessage()"
+                    [disabled]="processing">
+            </mat-form-field>
+            <button mat-fab color="primary" (click)="sendMessage()" [disabled]="processing || !userInput.trim()">
+                <mat-icon>send</mat-icon>
+            </button>
+        </div>
     </div>
 
     <!-- Start Over Button (when done) -->

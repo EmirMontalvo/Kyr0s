@@ -62,14 +62,14 @@
 }
 
 .cancel-client-btn {
-    color: #666;
+    color: var(--text-secondary);
 }
 
 ::ng-deep .mat-mdc-dialog-container .mat-mdc-dialog-surface {
     border-radius: 16px !important;
-    background-color: #ffffff !important; // Fix transparency
-    padding: 20px; // Add internal padding
-    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1) !important;
+    background-color: var(--dialog-bg) !important;
+    padding: 20px;
+    box-shadow: 0px 4px 20px var(--card-shadow) !important;
 }
 
 .dialog-header {
@@ -89,7 +89,7 @@ h2[mat-dialog-title] {
     text-align: center;
     font-size: 24px;
     font-weight: 500;
-    color: #333;
+    color: var(--text-heading);
 }
 
 mat-dialog-content {
@@ -104,4 +104,9 @@ mat-dialog-content {
     margin-bottom: 10px;
     font-weight: 500;
     font-size: 14px;
+}
+
+.client-phone {
+    color: var(--text-secondary);
+    font-size: 13px;
 }

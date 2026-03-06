@@ -1,22 +1,14 @@
 <div class="register-container">
     <mat-card>
         <div style="display: flex; flex-direction: column; align-items: center; padding: 20px 0;">
-            <img src="assets/images/logo-text.png" alt="Kyros Barber"
+            <img src="assets/images/logo-text.png" alt="Kyros Barber" class="sidebar-logo"
                 style="max-width: 200px; height: auto; margin-bottom: 15px;">
             <h2 style="margin: 0; font-size: 24px; font-weight: 500;">Crear Cuenta</h2>
-            <p style="margin: 5px 0 0; color: #666;">Únete a la comunidad de Kyros</p>
+            <p style="margin: 5px 0 0; color: var(--text-secondary);">Únete a la comunidad de Kyros</p>
         </div>
         <mat-card-content>
             <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
 
-                <div class="avatar-upload">
-                    <input type="file" (change)="onFileSelected($event)" accept="image/*" hidden #fileInput>
-                    <div class="avatar-circle" (click)="fileInput.click()">
-                        <img *ngIf="previewUrl" [src]="previewUrl" alt="Avatar Preview">
-                        <mat-icon *ngIf="!previewUrl">camera_alt</mat-icon>
-                    </div>
-                    <span *ngIf="!previewUrl">Seleccionar foto de perfil</span>
-                </div>
 
                 <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Nombre Completo</mat-label>
@@ -28,6 +20,9 @@
                     <input matInput formControlName="email" type="email" placeholder="ejemplo@correo.com">
                     <mat-error *ngIf="registerForm.get('email')?.hasError('email')">
                         Email inválido
+                    </mat-error>
+                    <mat-error *ngIf="registerForm.get('email')?.hasError('emailExists')">
+                        Este correo ya está registrado
                     </mat-error>
                 </mat-form-field>
 

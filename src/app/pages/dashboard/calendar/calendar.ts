@@ -15,6 +15,7 @@ import { AuthService } from '../../../services/auth';
 import { AppointmentDialog } from './appointment-dialog/appointment-dialog';
 import { ConfirmationDialog } from '../shared/confirmation-dialog/confirmation-dialog';
 import { BranchSelectorDialog } from './branch-selector-dialog/branch-selector-dialog';
+import { AppointmentDetailsDialog } from './appointment-details-dialog/appointment-details-dialog';
 
 import { Cita, Sucursal } from '../../../models';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -166,8 +167,10 @@ export class Calendar implements OnInit, OnDestroy {
         .select(`
           *,
           empleados (nombre),
-          clientes_bot (nombre),
+          clientes_bot (nombre, telefono),
           citas_servicios (
+            servicio_id,
+            precio_actual,
             servicios (nombre, precio_base)
           )
         `)
@@ -206,28 +209,36 @@ export class Calendar implements OnInit, OnDestroy {
   }
 
   getClienteNombre(cita: Cita): string {
-    if (cita.clientes_bot) return cita.clientes_bot.nombre;
-    if (cita.nombre_cliente_manual) return `${cita.nombre_cliente_manual} (De paso)`;
+    // Prioritize nombre_cliente_manual (used by chatbot) over clientes_bot.nombre
+    if (cita.nombre_cliente_manual) return cita.nombre_cliente_manual;
+    if (cita.clientes_bot?.nombre) return cita.clientes_bot.nombre;
+    if (cita.clientes_bot?.telefono) return cita.clientes_bot.telefono;
     return 'Cliente';
   }
 
   getServiciosNombres(cita: Cita): string {
-    if (!cita.citas_servicios || cita.citas_servicios.length === 0) return 'Sin servicios';
-    return cita.citas_servicios.map(cs => cs.servicios?.nombre || 'Servicio').join(', ');
+    if (cita.citas_servicios && cita.citas_servicios.length > 0) {
+      return cita.citas_servicios.map(cs => cs.servicios?.nombre || 'Servicio').join(', ');
+    }
+    // Fallback for WhatsApp bot appointments that store service name directly
+    if ((cita as any).servicio) return (cita as any).servicio;
+    return 'Sin servicios';
   }
 
   getTotalPrecio(cita: Cita): number {
-    if (!cita.citas_servicios || cita.citas_servicios.length === 0) return 0;
-    return cita.citas_servicios.reduce((acc, cs) => acc + (cs.servicios?.precio_base || 0), 0);
+    if (cita.citas_servicios && cita.citas_servicios.length > 0) {
+      return cita.citas_servicios.reduce((acc, cs) => acc + (cs.precio_actual || cs.servicios?.precio_base || 0), 0);
+    }
+    // Fallback for WhatsApp bot appointments that store total directly
+    return (cita as any).monto_total || 0;
   }
 
   formatTime(isoString: string): string {
-    // Extract time directly from ISO string to avoid timezone conversion
-    // Format: 2026-01-19T10:00:00 -> 10:00 a.m.
-    const timePart = isoString.split('T')[1];
-    if (!timePart) return '';
-
-    const [hours, minutes] = timePart.split(':').map(Number);
+    if (!isoString) return '';
+    // Parse as Date to convert UTC to local timezone automatically
+    const date = new Date(isoString);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
     const period = hours >= 12 ? 'p.m.' : 'a.m.';
     const displayHours = hours % 12 || 12;
     return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`;
@@ -262,7 +273,8 @@ export class Calendar implements OnInit, OnDestroy {
       data: {
         cita,
         date: this.selectedDate,
-        selectedBranchId: this.selectedBranchId
+        selectedBranchId: this.selectedBranchId,
+        isBranchUser: this.isBranchUser
       }
     });
 
@@ -274,16 +286,33 @@ export class Calendar implements OnInit, OnDestroy {
     });
   }
 
+  showDetails(cita: Cita) {
+    this.dialog.open(AppointmentDetailsDialog, {
+      width: '500px',
+      data: { cita }
+    });
+  }
+
   async updateStatus(cita: Cita, status: Cita['estado']) {
     const isCancel = status === 'cancelada';
+    const isPaid = cita.estado_pago === 'pagado';
+
+    // Build confirmation message based on payment status
+    let message = isCancel
+      ? '¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer.'
+      : '¿Confirmas que esta cita ha sido completada?';
+
+    if (isCancel && isPaid) {
+      const monto = cita.monto_total || this.getTotalPrecio(cita);
+      message = `**⚠️ Esta cita tiene un pago de $${monto} MXN.**\n\n¿Deseas cancelar y reembolsar el dinero al cliente? El reembolso se procesará automáticamente a la cuenta bancaria del cliente.`;
+    }
+
     const dialogRef = this.dialog.open(ConfirmationDialog, {
       width: '400px',
       data: {
         title: isCancel ? 'Cancelar Cita' : 'Completar Cita',
-        message: isCancel
-          ? '¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer.'
-          : '¿Confirmas que esta cita ha sido completada?',
-        confirmText: isCancel ? 'Sí, Cancelar' : 'Sí, Completar',
+        message: message,
+        confirmText: isCancel ? (isPaid ? 'Sí, Cancelar y Reembolsar' : 'Sí, Cancelar') : 'Sí, Completar',
         cancelText: 'No, Volver',
         color: isCancel ? 'warn' : 'primary'
       }
@@ -291,32 +320,126 @@ export class Calendar implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(async (result) => {
       if (result) {
-        // Calculate total if completing
-        let updateData: any = { estado: status };
+        this.loading = true;
+        this.cdr.detectChanges();
 
-        if (status === 'completada') {
-          // Calculate total from services
-          let total = 0;
-          if (cita.citas_servicios && cita.citas_servicios.length > 0) {
-            total = cita.citas_servicios.reduce((sum, cs) => sum + (cs.precio_actual || 0), 0);
+        try {
+          // If cancelling a paid appointment, process refund first
+          if (isCancel && isPaid) {
+            const user = this.authService.currentUser;
+            const { data: sessionData } = await this.supabase.client.auth.getSession();
+
+            const response = await fetch(
+              'https://qyyhembukflbxjbctuav.supabase.co/functions/v1/refund-appointment',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${sessionData.session?.access_token}`
+                },
+                body: JSON.stringify({ cita_id: cita.id })
+              }
+            );
+
+            const refundResult = await response.json();
+
+            if (refundResult.error) {
+              throw new Error(refundResult.error);
+            }
+
+            this.ngZone.run(() => {
+              this.loadCitas(this.selectedDate);
+              this.snackBar.open(`Cita cancelada y reembolso de $${refundResult.amount_refunded} MXN procesado`, 'Cerrar', { duration: 5000 });
+              this.loading = false;
+              this.cdr.detectChanges();
+            });
+            return;
           }
-          updateData.total_pagado = total;
-          updateData.fecha_completado = new Date().toISOString();
+
+          // Normal status update (non-paid cancellation or completion)
+          let updateData: any = { estado: status };
+
+          if (status === 'completada') {
+            // Calculate total from services
+            let total = 0;
+            if (cita.citas_servicios && cita.citas_servicios.length > 0) {
+              total = cita.citas_servicios.reduce((sum, cs) => sum + (cs.precio_actual || cs.servicios?.precio_base || 0), 0);
+            }
+            updateData.total_pagado = total;
+            updateData.fecha_completado = new Date().toISOString();
+          }
+
+          const { error } = await this.supabase.client
+            .from('citas')
+            .update(updateData)
+            .eq('id', cita.id);
+
+          this.ngZone.run(() => {
+            if (error) {
+              this.snackBar.open('Error al actualizar estado', 'Cerrar', { duration: 3000 });
+            } else {
+              this.loadCitas(this.selectedDate);
+              this.snackBar.open(`Cita ${status}`, 'Cerrar', { duration: 3000 });
+            }
+            this.loading = false;
+            this.cdr.detectChanges();
+          });
+        } catch (error: any) {
+          this.ngZone.run(() => {
+            this.snackBar.open(`Error: ${error.message}`, 'Cerrar', { duration: 5000 });
+            this.loading = false;
+            this.cdr.detectChanges();
+          });
         }
+      }
+    });
+  }
 
-        const { error } = await this.supabase.client
-          .from('citas')
-          .update(updateData)
-          .eq('id', cita.id);
+  async confirmCashPayment(cita: Cita) {
+    const monto = cita.monto_total || this.getTotalPrecio(cita);
 
-        this.ngZone.run(() => {
-          if (error) {
-            this.snackBar.open('Error al actualizar estado', 'Cerrar', { duration: 3000 });
-          } else {
-            this.loadCitas(this.selectedDate);
-            this.snackBar.open(`Cita ${status}`, 'Cerrar', { duration: 3000 });
-          }
-        });
+    const dialogRef = this.dialog.open(ConfirmationDialog, {
+      width: '400px',
+      data: {
+        title: 'Confirmar Pago en Efectivo',
+        message: `¿Confirmas que el cliente ha realizado el pago de $${monto} MXN en efectivo?`,
+        confirmText: 'Sí, Pago Recibido',
+        cancelText: 'Cancelar',
+        color: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (result) {
+        this.loading = true;
+        this.cdr.detectChanges();
+
+        try {
+          const { error } = await this.supabase.client
+            .from('citas')
+            .update({
+              estado_pago: 'pagado',
+              estado: 'pendiente'
+            })
+            .eq('id', cita.id);
+
+          this.ngZone.run(() => {
+            if (error) {
+              this.snackBar.open('Error al confirmar pago', 'Cerrar', { duration: 3000 });
+            } else {
+              this.loadCitas(this.selectedDate);
+              this.snackBar.open(`Pago de $${monto} MXN confirmado`, 'Cerrar', { duration: 3000 });
+            }
+            this.loading = false;
+            this.cdr.detectChanges();
+          });
+        } catch (error: any) {
+          this.ngZone.run(() => {
+            this.snackBar.open(`Error: ${error.message}`, 'Cerrar', { duration: 5000 });
+            this.loading = false;
+            this.cdr.detectChanges();
+          });
+        }
       }
     });
   }

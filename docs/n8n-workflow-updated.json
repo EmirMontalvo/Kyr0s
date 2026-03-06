@@ -1,0 +1,877 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "messages"
+                ],
+                "options": {}
+            },
+            "type": "n8n-nodes-base.whatsAppTrigger",
+            "typeVersion": 1,
+            "position": [
+                -2576,
+                240
+            ],
+            "id": "5bb45704-3bd9-402d-9af9-0090b8963c4e",
+            "name": "WhatsApp Trigger",
+            "webhookId": "6cc39834-8272-4352-b90b-7c54048b8a82",
+            "credentials": {
+                "whatsAppTriggerApi": {
+                    "id": "UH38Vh45b33qwXC3",
+                    "name": "WhatsApp OAuth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "88e6024f-7173-4443-9480-697a35ecf807",
+                            "name": "chat_id",
+                            "value": "={{ $json.messages[0].from }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "c4116691-0722-4714-88ec-fd8c55af8189",
+                            "name": "telefono_meta",
+                            "value": "={{ $json.contacts[0].wa_id.replace('521', '52')}}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "09bd3e6d-6849-49e8-a750-caea58263928",
+                            "name": "message_text",
+                            "value": "={{ $json.messages[0].text.body }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "56a7fee4-5646-4b84-a276-7790b0ae9beb",
+                            "name": "nombre_usuario",
+                            "value": "={{ $json.contacts[0].profile.name }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -2352,
+                240
+            ],
+            "id": "49e9bd2e-85af-4fba-912c-1a5304432343",
+            "name": "Edit Fields"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $('Edit Fields').item.json.message_text }}",
+                "hasOutputParser": true,
+                "options": {
+                    "systemMessage": "=DATOS DEL CLIENTE ACTUAL: Teléfono: {{ $('Edit Fields').item.json.telefono_meta }}, Nombre: {{ $('Edit Fields').item.json.nombre_usuario }}\nFECHA Y HORA ACTUAL DEL SISTEMA: {{ $now.setZone('America/Mexico_City').toFormat('yyyy-MM-dd HH:mm:ss') }} (Usa esta fecha como tu HOY para calcular cualquier día relativo como 'mañana').\n\nSUCURSALES: {{ JSON.stringify($('Get Sucursales').all().map(item => item.json)) }}\nSERVICIOS: {{ JSON.stringify($('Get Servicios').all().map(item => item.json)) }}\nEMPLEADOS: {{ JSON.stringify($('Get Empleados').all().map(item => item.json)) }}\nAGENDA_OCUPADA: {{ JSON.stringify($('Get Citas').all().map(item => item.json)) }}\n\n--- CONFIGURACIÓN DE TIEMPO Y FECHA (CRÍTICO ⏰) ---\n1. ZONA HORARIA: Todo ocurre en hora de Ciudad de México (GMT-6).\n2. CÁLCULO DE FECHAS: Si el usuario dice \"mañana\", \"el viernes\", etc., calcula la fecha exacta basándote en la FECHA Y HORA ACTUAL DEL SISTEMA proporcionada.\n3. FORMATO: Siempre confirma la fecha en formato legible (ej: \"Lunes 12 de Octubre a las 3:00 PM\").\n\n--- FLUJO DE CONVERSACIÓN (ESTRICTO) ---\n\nPASO 1 (SELECCIÓN DE SUCURSAL):\n- NO inventes nombres. Usa la lista 'SUCURSALES' para ver los datos reales.\n- Saluda al cliente por su nombre y muestra las sucursales disponibles con este formato:\n   * 🏢 **[Nombre Sucursal]**\n     📍 [Dirección]\n     🗺️ Ver mapa: https://www.google.com/maps/search/?api=1&query=[INSERTA_DIRECCION_AQUI]\n- Pregunta: \"¿En cuál te gustaría agendar?\"\n\nPASO 2 (SERVICIOS):\n- Una vez elegida la sucursal, muestra SOLO los servicios disponibles para ese ID de sucursal.\n- Muestra el precio.\n- IMPORTANTE: Internamente guarda el 'id', 'precio_base', 'duracion_aprox_minutos' y 'link_pago' del servicio elegido. Los necesitarás en el código final.\n- Pregunta: \"¿Cuál deseas?\"\n\nPASO 3 (BARBERO):\n- Muestra barberos disponibles.\n\nPASO 4 (FECHA):\n- Pide fecha y hora.\n- REVISA DISPONIBILIDAD en 'AGENDA_OCUPADA'. Si choca con otra cita, avisa y ofrece otra hora.\n\nPASO 5 (DATOS CONTACTO):\n- Pide el CORREO ELECTRÓNICO del usuario para enviarle su confirmación.\n\nPASO 6 (COBRO OBLIGATORIO 💳):\n- Una vez tengas el correo, PREGUNTA: \"¿Prefieres pagar en **Efectivo** al llegar o con **Tarjeta** ahora?\"\n- SI ELIGE EFECTIVO:\n   - Responde: \"¡Perfecto! Pagarás al llegar a la sucursal.\"\n   - Genera el código final con MetodoPago=efectivo.\n- SI ELIGE TARJETA:\n   1. DETENTE Y PIENSA: \"¿Qué servicio específico eligió el cliente en el Paso 2?\".\n   2. REVISA la lista 'SERVICIOS' y busca la fila donde el 'nombre' coincida con ese servicio.\n   3. OBTÉN el valor de la columna 'link_pago' de esa fila.\n   4. SI EL LINK EXISTE: Responde: \"¡Perfecto! Paga aquí de forma segura 💳: [PEGAR_LINK_ENCONTRADO]\\n\\nUna vez confirmado tu pago, tu cita quedará registrada. ¡Te esperamos!\"\n   5. SI EL LINK ESTÁ VACÍO O NO LO ENCUENTRAS: Responde: \"⚠️ No hay link de pago disponible para este servicio. Se agendará como pago pendiente.\"\n   6. Genera el código final con MetodoPago=tarjeta.\n\n--- CONSULTAS SOBRE CITAS EXISTENTES ---\nSi el cliente actual te pregunta sobre sus citas agendadas, busca en AGENDA_OCUPADA donde el 'telefono' coincida con su Teléfono actual. Informale del día y hora exacta en formato legible.\n\n--- CÓDIGO FINAL ---\nSolo al completar el PASO 6, genera UNA ÚNICA LÍNEA con este formato exacto (sin espacios extra):\nAGENDA|Nombre|Telefono|NombreServicio|ID_Barbero|YYYY-MM-DD HH:mm:ss-06:00|ID_Sucursal|Email|ID_Servicio|PrecioServicio|DuracionMinutos|MetodoPago\n\nEJEMPLO:\nAGENDA|Juan Pérez|5219991234567|Corte de Cabello de Hombre|9|2026-02-20 12:00:00-06:00|32|juan@email.com|13|60|20|tarjeta\n\nREGLAS DEL CÓDIGO:\n- Nombre: nombre completo del cliente\n- Telefono: número de WhatsApp del cliente\n- NombreServicio: nombre exacto del servicio\n- ID_Barbero: el id numérico del empleado elegido\n- Fecha: en formato YYYY-MM-DD HH:mm:ss-06:00\n- ID_Sucursal: el id numérico de la sucursal elegida\n- Email: correo electrónico del cliente\n- ID_Servicio: el id numérico del servicio elegido (campo 'id' de SERVICIOS)\n- PrecioServicio: el precio_base del servicio elegido (solo el número)\n- DuracionMinutos: duracion_aprox_minutos del servicio elegido (solo el número)\n- MetodoPago: 'efectivo' o 'tarjeta'"75:
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 3.1,
+            "position": [
+                -1232,
+                240
+            ],
+            "id": "c43890b3-47b1-44db-890d-94ee3df51a85",
+            "name": "AI Agent"
+        },
+        {
+            "parameters": {
+                "modelName": "models/gemini-robotics-er-1.5-preview",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                -1232,
+                432
+            ],
+            "id": "2a3c91a2-3959-4903-9404-7e4d0335865c",
+            "name": "Google Gemini Chat Model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "3ce8F0Iet9IaErqT",
+                    "name": "Google Gemini(PaLM) Api account 3"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "sucursales"
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -1792,
+                240
+            ],
+            "id": "e20f4d81-7f23-4890-aec6-e6b57634c2a3",
+            "name": "Get Sucursales",
+            "executeOnce": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "tableId": "clientes_bot",
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "chat_id",
+                            "fieldValue": "={{ $('Edit Fields').first().json.chat_id }}"
+                        },
+                        {
+                            "fieldId": "telefono",
+                            "fieldValue": "={{ $('Edit Fields').first().json.telefono_meta }}"
+                        },
+                        {
+                            "fieldId": "nombre",
+                            "fieldValue": "={{ $('Parse Datos').first().json.cliente_nombre }}"
+                        },
+                        {
+                            "fieldId": "plataforma",
+                            "fieldValue": "=whatsapp"
+                        },
+                        {
+                            "fieldId": "negocio_id",
+                            "fieldValue": "cdaaf6b6-c7db-4968-aa93-8f1dfb75a78c"
+                        },
+                        {
+                            "fieldId": "email",
+                            "fieldValue": "={{ $('Parse Datos').first().json.cliente_email }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                0,
+                224
+            ],
+            "id": "154590b3-b0ff-49be-a71f-d14e7efc69d2",
+            "name": "Insert Cliente",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "servicios"
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -2176,
+                240
+            ],
+            "id": "0a22122d-5ec9-4707-9b8a-526ea82d0664",
+            "name": "Get Servicios",
+            "executeOnce": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "empleados",
+                "returnAll": true
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -1968,
+                240
+            ],
+            "id": "9c87e632-c15f-4797-9cbd-2727e109a159",
+            "name": "Get Empleados",
+            "executeOnce": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "70047727-b527-43e6-bf45-6cde09e5a44b",
+                            "leftValue": "={{ $('AI Agent').first().json.output }}",
+                            "rightValue": "AGENDA|",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                -864,
+                240
+            ],
+            "id": "a26030cb-862f-49b6-95de-f3c7845773b0",
+            "name": "If"
+        },
+        {
+            "parameters": {
+                "aggregate": "aggregateAllItemData",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.aggregate",
+            "typeVersion": 1,
+            "position": [
+                -1424,
+                240
+            ],
+            "id": "bcc33132-4ab5-4367-aaa6-06b69b6a149b",
+            "name": "Aggregate"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "7fa24d98-22af-4d8a-a7f3-37bbe54c5109",
+                            "name": "cliente_nombre",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[0] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "47b0c431-2236-4c7c-b5c5-894fa98dc97e",
+                            "name": "cliente_telefono",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[1] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "ecee43a1-6108-4823-b1aa-d94dc3f753e6",
+                            "name": "servicio_nombre",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[2] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "4476b173-693b-4035-a7cd-c6d3972ea70e",
+                            "name": "barbero_id",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[3] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "82a5a333-1166-4d95-9356-f51fbcd21f5d",
+                            "name": "fecha_inicio",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[4] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "40d7ccd3-6d0e-46ce-90c2-c739313ac746",
+                            "name": "sucursal_id",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[5] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "156a6df8-2335-4f40-998a-9aa166542007",
+                            "name": "cliente_email",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[6] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a1b2c3d4-1111-2222-3333-444455556666",
+                            "name": "servicio_id",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[7] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a1b2c3d4-1111-2222-3333-444455557777",
+                            "name": "servicio_precio",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[8] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a1b2c3d4-1111-2222-3333-444455558888",
+                            "name": "servicio_duracion",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[9] }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "a1b2c3d4-1111-2222-3333-444455559999",
+                            "name": "metodo_pago",
+                            "value": "={{ $('AI Agent').item.json.output.match(/AGENDA\\|(.+)/)[1].split('|')[10] }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -640,
+                112
+            ],
+            "id": "8e505756-5d8b-46ef-8201-228c1875fa72",
+            "name": "Parse Datos"
+        },
+        {
+            "parameters": {
+                "tableId": "citas",
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "negocio_id",
+                            "fieldValue": "cdaaf6b6-c7db-4968-aa93-8f1dfb75a78c"
+                        },
+                        {
+                            "fieldId": "sucursal_id",
+                            "fieldValue": "={{ $('Parse Datos').first().json.sucursal_id }}"
+                        },
+                        {
+                            "fieldId": "empleado_id",
+                            "fieldValue": "={{ $('Parse Datos').first().json.barbero_id }}"
+                        },
+                        {
+                            "fieldId": "cliente_id",
+                            "fieldValue": "={{ $json.id }}"
+                        },
+                        {
+                            "fieldId": "nombre_cliente_manual",
+                            "fieldValue": "={{ $('Parse Datos').first().json.cliente_nombre }}"
+                        },
+                        {
+                            "fieldId": "fecha_hora_inicio",
+                            "fieldValue": "={{ $('Parse Datos').first().json.fecha_inicio }}"
+                        },
+                        {
+                            "fieldId": "fecha_hora_fin",
+                            "fieldValue": "={{ DateTime.fromISO($('Parse Datos').first().json.fecha_inicio.replace(' ', 'T')).plus({ minutes: Number($('Parse Datos').first().json.servicio_duracion) || 30 }).toISO() }}"
+                        },
+                        {
+                            "fieldId": "estado",
+                            "fieldValue": "=pendiente_pago"
+                        },
+                        {
+                            "fieldId": "tipo",
+                            "fieldValue": "cita"
+                        },
+                        {
+                            "fieldId": "telefono",
+                            "fieldValue": "={{ $('Edit Fields').first().json.chat_id }}"
+                        },
+                        {
+                            "fieldId": "servicio",
+                            "fieldValue": "={{ $('Parse Datos').first().json.servicio_nombre }}"
+                        },
+                        {
+                            "fieldId": "monto_total",
+                            "fieldValue": "={{ $('Parse Datos').first().json.servicio_precio }}"
+                        },
+                        {
+                            "fieldId": "estado_pago",
+                            "fieldValue": "=pendiente"
+                        },
+                        {
+                            "fieldId": "cliente_email",
+                            "fieldValue": "={{ $('Parse Datos').first().json.cliente_email }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                288,
+                112
+            ],
+            "id": "22d2a4eb-a964-4ed0-baec-0033218c9076",
+            "name": "citas",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "tableId": "citas_servicios",
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "cita_id",
+                            "fieldValue": "={{ $json.id }}"
+                        },
+                        {
+                            "fieldId": "servicio_id",
+                            "fieldValue": "={{ $('Parse Datos').first().json.servicio_id }}"
+                        },
+                        {
+                            "fieldId": "precio_actual",
+                            "fieldValue": "={{ $('Parse Datos').first().json.servicio_precio }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                496,
+                112
+            ],
+            "id": "d1e2f3a4-5678-9abc-def0-123456789abc",
+            "name": "Insert Citas Servicios",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+                "recipientPhoneNumber": "={{ $('Edit Fields').item.json.telefono_meta }}",
+                "textBody": "={{ $('AI Agent').item.json.output }}",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1.1,
+            "position": [
+                -640,
+                304
+            ],
+            "id": "a8a1a945-4ad9-4460-a8c5-28ed6d7270eb",
+            "name": "Send message",
+            "webhookId": "e364b8c1-4c4d-409a-9990-e3410d0eaca0",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "8fnbR6vOXcRiDpwa",
+                    "name": "WhatsApp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+                "recipientPhoneNumber": "={{ $('Edit Fields').item.json.telefono_meta }}",
+                "textBody": "=\"¡Listo! ✅ Tu cita quedó agendada con éxito.\\n\\n🗓️ Fecha: {{ $('Parse Datos').first().json.fecha_inicio }}\\n💈 Barbero asignado\\n💇 Servicio: {{ $('Parse Datos').first().json.servicio_nombre }}\\n💰 Total: ${{ $('Parse Datos').first().json.servicio_precio }} MXN\\n💳 Pago: {{ $('Parse Datos').first().json.metodo_pago === 'tarjeta' ? 'Con tarjeta (pendiente de confirmación)' : 'En efectivo al llegar' }}\\n\\n¡Te esperamos!\"",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1.1,
+            "position": [
+                704,
+                112
+            ],
+            "id": "00e6cd57-8714-4e50-b42f-262156b1e55a",
+            "name": "Send message1",
+            "webhookId": "5cbfd627-75c9-4301-b1a8-388616106cbb",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "8fnbR6vOXcRiDpwa",
+                    "name": "WhatsApp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "sessionIdType": "customKey",
+                "sessionKey": "={{ 'wa_' + $('Edit Fields').first().json.chat_id }}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+            "typeVersion": 1.3,
+            "position": [
+                -1120,
+                432
+            ],
+            "id": "619c4621-207b-4b51-b1ff-482cd2673f8a",
+            "name": "Postgres Chat Memory",
+            "credentials": {
+                "postgres": {
+                    "id": "27IDhjN9JsJL3awd",
+                    "name": "Postgres account 2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "citas",
+                "returnAll": true
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -1616,
+                240
+            ],
+            "id": "85092a22-dae8-453a-b00b-edd041c113fc",
+            "name": "Get Citas",
+            "executeOnce": true,
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "clientes_bot",
+                "returnAll": true,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "telefono",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.cliente_telefono }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -432,
+                112
+            ],
+            "id": "4cbace21-1c1c-4c92-9fdd-afae26aec6ce",
+            "name": "Buscar Cliente",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "901846b4-8c01-407d-9165-e52c47111623",
+                            "leftValue": "={{ $('Buscar Cliente').first().json.id }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "number",
+                                "operation": "notEmpty",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                -224,
+                112
+            ],
+            "id": "7f6ba930-98b9-49c3-91cc-fa08f6df2ccb",
+            "name": "If1"
+        },
+        {
+            "parameters": {
+                "operation": "update",
+                "tableId": "clientes_bot",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "condition": "eq",
+                            "keyValue": "={{ $('Buscar Cliente').first().json.id }}"
+                        }
+                    ]
+                },
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "email",
+                            "fieldValue": "={{ $('Parse Datos').first().json.cliente_email }}"
+                        },
+                        {
+                            "fieldId": "nombre",
+                            "fieldValue": "={{ $('Parse Datos').first().json.cliente_nombre }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "bcff1ec4-86fe-4738-882a-59f99f0828af",
+            "name": "Update Cliente",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "Ty3kozhIwqimSUBG",
+                    "name": "Supabase account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "WhatsApp Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields": {
+            "main": [
+                [
+                    {
+                        "node": "Get Servicios",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Agent": {
+            "main": [
+                [
+                    {
+                        "node": "If",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Sucursales": {
+            "main": [
+                [
+                    {
+                        "node": "Get Citas",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Cliente": {
+            "main": [
+                [
+                    {
+                        "node": "citas",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Servicios": {
+            "main": [
+                [
+                    {
+                        "node": "Get Empleados",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Empleados": {
+            "main": [
+                [
+                    {
+                        "node": "Get Sucursales",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Datos",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Send message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Datos": {
+            "main": [
+                [
+                    {
+                        "node": "Buscar Cliente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "citas": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Citas Servicios",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Citas Servicios": {
+            "main": [
+                [
+                    {
+                        "node": "Send message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Postgres Chat Memory": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Citas": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Cliente": {
+            "main": [
+                [
+                    {
+                        "node": "If1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If1": {
+            "main": [
+                [
+                    {
+                        "node": "Update Cliente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Insert Cliente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Cliente": {
+            "main": [
+                [
+                    {
+                        "node": "citas",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "1a6704f28b4360f46e32cac2e2958dc13fba245690ff3edd7006a2a7e17da3a4"
+    }
+}

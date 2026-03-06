@@ -31,8 +31,6 @@ import { SupabaseService } from '../../../services/supabase.service';
 export class Register {
   registerForm: FormGroup;
   loading = false;
-  selectedFile: File | null = null;
-  previewUrl: string | null = null;
   hidePassword = true;
 
   constructor(
@@ -45,59 +43,56 @@ export class Register {
   ) {
     this.registerForm = this.fb.group({
       nombre: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email], [this.emailValidator()]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.previewUrl = e.target.result;
-        this.cdr.detectChanges();
-      };
-      reader.readAsDataURL(file);
-    }
+  emailValidator() {
+    return async (control: any) => {
+      if (!control.value) return null;
+
+      // Try using secure RPC to check auth.users directly
+      const { data, error } = await this.supabaseService.client
+        .rpc('check_email_exists', { email_check: control.value });
+
+      if (!error && typeof data === 'boolean') {
+        return data ? { emailExists: true } : null;
+      }
+
+      // Fallback: Check public profile (may be blocked by RLS)
+      const { data: profile } = await this.supabaseService.client
+        .from('usuarios_perfiles')
+        .select('id')
+        .eq('email', control.value)
+        .single();
+
+      return profile ? { emailExists: true } : null;
+    };
   }
+
+
 
   async onSubmit() {
     if (this.registerForm.invalid) return;
 
     this.loading = true;
     const { nombre, email, password } = this.registerForm.value;
-    let avatarUrl = null;
 
     try {
-      // 1. Upload Image if selected
-      if (this.selectedFile) {
-        const fileExt = this.selectedFile.name.split('.').pop();
-        const fileName = `temp_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await this.supabaseService.client.storage
-          .from('avatars')
-          .upload(fileName, this.selectedFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data } = this.supabaseService.client.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-
-        avatarUrl = data.publicUrl;
-      }
-
-      // 2. Sign Up
+      // Sign Up without avatar (user can add it later in their profile)
       const { error } = await this.authService.signUp(email, password, {
         nombre_completo: nombre,
-        avatar_url: avatarUrl
+        avatar_url: null
       });
 
       if (error) throw error;
 
-      this.snackBar.open('Registro exitoso. ¡Bienvenido!', 'Cerrar', { duration: 3000 });
-      this.router.navigate(['/']);
+      this.snackBar.open('Favor de verificar su correo electronico para completar el registro.', 'Cerrar', { duration: 5000 });
+
+      // Ensure user is signed out so they can't access dashboard without verification
+      await this.authService.signOut();
+      this.router.navigate(['/login']);
 
     } catch (error: any) {
       this.snackBar.open(error.message, 'Cerrar', { duration: 3000 });

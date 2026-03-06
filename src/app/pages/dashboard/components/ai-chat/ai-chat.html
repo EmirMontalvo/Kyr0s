@@ -1,0 +1,48 @@
+<!-- Floating AI Button -->
+<button *ngIf="isAvailable" class="ai-fab" (click)="toggleChat()" [class.active]="isOpen">
+    <mat-icon>{{ isOpen ? 'close' : 'smart_toy' }}</mat-icon>
+</button>
+
+<!-- Chat Card -->
+<div class="ai-chat-card" *ngIf="isAvailable && isOpen">
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="header-info">
+            <mat-icon>smart_toy</mat-icon>
+            <span>Asistente IA</span>
+        </div>
+        <button mat-icon-button (click)="toggleChat()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" #messagesContainer>
+        <div *ngFor="let msg of messages" class="message" [class.user]="msg.role === 'user'"
+            [class.assistant]="msg.role === 'assistant'">
+            <div class="message-bubble">
+                <div class="message-content" [innerText]="msg.content"></div>
+            </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div *ngIf="isLoading" class="message assistant">
+            <div class="message-bubble loading">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input">
+        <input type="text" [(ngModel)]="userMessage" (keydown)="onKeyDown($event)"
+            placeholder="Pregunta sobre tu negocio..." [disabled]="isLoading">
+        <button mat-icon-button (click)="sendMessage()" [disabled]="isLoading || !userMessage.trim()">
+            <mat-icon>send</mat-icon>
+        </button>
+    </div>
+</div>

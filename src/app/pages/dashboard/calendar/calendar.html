@@ -40,7 +40,8 @@
             </div>
 
             <mat-card *ngFor="let cita of citas" class="cita-card" [class.en-proceso]="cita.estado === 'en_proceso'"
-                [style.border-left-color]="cita.estado === 'pendiente' ? '#1976d2' : cita.estado === 'completada' ? '#388e3c' : cita.estado === 'cancelada' ? '#d32f2f' : ''">
+                [style.border-left-color]="cita.estado === 'pendiente' ? '#1976d2' : cita.estado === 'completada' ? '#388e3c' : cita.estado === 'cancelada' ? '#d32f2f' : cita.estado === 'pendiente_pago' ? '#ff9800' : ''"
+                (click)="showDetails(cita)" style="cursor: pointer;">
                 <div class="time-column">
                     <span class="start-time">{{ formatTime(cita.fecha_hora_inicio) }}</span>
                     <span class="end-time">{{ formatTime(cita.fecha_hora_fin) }}</span>
@@ -57,13 +58,19 @@
                     </p>
                 </div>
                 <div class="status-column">
-                    <span class="status-badge" [class]="cita.estado">{{ cita.estado }}</span>
+                    <span class="status-badge" [class]="cita.estado">{{ cita.estado === 'pendiente_pago' ? 'Pendiente de
+                        Pago' : cita.estado === 'en_proceso' ? 'En Proceso' : cita.estado }}</span>
 
-                    <div class="actions">
+                    <div class="actions" (click)="$event.stopPropagation()">
                         <button mat-icon-button color="primary" (click)="openDialog(cita)" matTooltip="Editar">
                             <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button color="accent" *ngIf="cita.estado !== 'completada'"
+                        <button mat-icon-button style="color: #4caf50;" *ngIf="cita.estado === 'pendiente_pago'"
+                            (click)="confirmCashPayment(cita)" matTooltip="Pago Realizado">
+                            <mat-icon>payments</mat-icon>
+                        </button>
+                        <button mat-icon-button color="accent"
+                            *ngIf="cita.estado !== 'completada' && cita.estado !== 'pendiente_pago'"
                             (click)="updateStatus(cita, 'completada')" matTooltip="Completar">
                             <mat-icon>check_circle</mat-icon>
                         </button>

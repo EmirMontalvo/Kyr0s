@@ -1,95 +1,491 @@
 .onboarding-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
     height: 100vh;
+    background-color: var(--bg-secondary);
     display: flex;
     flex-direction: column;
-    background-color: #fafafa;
 }
 
-.header {
-    margin-bottom: 20px;
+.custom-header {
+    background-color: var(--bg-card);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    position: relative;
+    border-bottom: 4px solid #3b82f6; // Blue color similar to dashboard
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    .logo-container {
+        height: 100%;
+        display: flex;
+        align-items: center;
+
+        img {
+            height: 32px; // Small and centered
+            object-fit: contain;
+        }
+    }
+
+    .close-btn {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+
+        &:hover {
+            color: #d32f2f; // Red on hover
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+    }
+}
+
+.content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.onboarding-steps {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+
+    // Disable clicking on stepper headers - navigation only via buttons
+    ::ng-deep .mat-step-header {
+        pointer-events: none !important;
+        cursor: default !important;
+    }
+}
+
+.header-title {
+    text-align: center;
+    margin-bottom: 2rem;
 
     h1 {
-        font-size: 1.5rem;
-        color: #333;
+        font-size: 2rem;
+        color: var(--text-heading);
+        font-weight: 500;
         margin: 0;
     }
 }
 
 .step-content {
-    padding: 20px 0;
-
-    h3 {
-        font-size: 1.1rem;
-        color: #555;
-        margin-bottom: 20px;
-    }
-
-    h4 {
-        margin-top: 15px;
-        margin-bottom: 10px;
-        color: #666;
-    }
+    padding: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
-.full-width {
-    width: 100%;
-    margin-bottom: 15px;
+h3 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+}
+
+.subtitle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+
+    .info-btn {
+        color: #3b82f6;
+
+        &:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        mat-icon {
+            font-size: 22px;
+        }
+    }
 }
 
 .row {
     display: flex;
-    gap: 15px;
+    gap: 1rem;
+}
 
-    .half-width {
-        flex: 1;
-    }
+.half-width {
+    flex: 1;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.full-width-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 1.5rem;
 }
 
 .toggle-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 20px 0;
-    font-size: 1rem;
-    color: #333;
+    margin: 1.5rem 0;
+}
+
+.add-btn {
+    margin-bottom: 1.5rem;
 }
 
 .actions {
     display: flex;
     justify-content: space-between;
-    margin-top: 30px;
+    margin-top: 2rem;
 
     button {
-        min-width: 100px;
+        min-width: 120px;
     }
 }
 
-.full-width-btn {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 25px;
-    height: 50px;
+// Plan Cards
+.plans-container {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: center;
+    }
 }
 
-.add-btn {
-    margin-bottom: 20px;
-    border-radius: 25px;
-    height: 45px;
+.plan-card {
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+    flex: 1;
+    max-width: 320px;
+    min-width: 250px;
+
+    &.selected {
+        border-color: #3b82f6; // Primary blue
+        background-color: #f0f7ff;
+    }
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    mat-card-header {
+        margin-bottom: 1rem;
+    }
+
+    mat-card-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    mat-card-subtitle {
+        color: #3b82f6;
+        font-weight: 500;
+    }
+
+    mat-card-content {
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+
+            li {
+                padding: 0.25rem 0;
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+
+                &:before {
+                    content: "•";
+                    color: #3b82f6;
+                    font-weight: bold;
+                    margin-right: 0.5rem;
+                }
+            }
+        }
+    }
+
+    .radio-indicator {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        color: #ddd;
+
+        mat-icon {
+            font-size: 1.5rem;
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+    }
+
+    &.selected .radio-indicator {
+        color: #3b82f6;
+    }
 }
 
-// Override Stepper Styles to match purple theme
-::ng-deep .mat-step-header .mat-step-icon-selected,
-::ng-deep .mat-step-header .mat-step-icon-state-done,
-::ng-deep .mat-step-header .mat-step-icon-state-edit {
-    background-color: #673ab7 !important; // Deep Purple
-    color: white !important;
+// Mobile Responsive Styles for Stepper
+@media (max-width: 768px) {
+    .onboarding-steps {
+        padding: 1rem 0.5rem;
+    }
+
+    .header-title {
+        margin-bottom: 1rem;
+
+        h1 {
+            font-size: 1.5rem;
+        }
+    }
+
+    // Hide step labels on mobile, show only icons/numbers
+    ::ng-deep .mat-horizontal-stepper-header-container {
+        padding: 0 0.5rem;
+    }
+
+    ::ng-deep .mat-step-header {
+        padding: 0 8px !important;
+        height: auto !important;
+        min-height: 48px;
+    }
+
+    ::ng-deep .mat-step-text-label {
+        font-size: 0.65rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 50px;
+    }
+
+    ::ng-deep .mat-step-icon {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 12px !important;
+    }
+
+    ::ng-deep .mat-stepper-horizontal-line {
+        min-width: 16px !important;
+        flex: 1 1 auto !important;
+    }
+
+    .step-content {
+        padding: 0.5rem;
+    }
+
+    h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .subtitle-row {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+
+        .subtitle {
+            font-size: 0.85rem;
+        }
+    }
+
+    // Plan cards in mobile
+    .plans-container {
+        gap: 0.75rem;
+    }
+
+    .plan-card {
+        padding: 1rem;
+        max-width: 100%;
+        min-width: unset;
+        width: 100%;
+
+        mat-card-title {
+            font-size: 1rem;
+        }
+
+        mat-card-subtitle {
+            font-size: 0.8rem;
+        }
+
+        mat-card-content {
+            p {
+                font-size: 0.8rem;
+            }
+
+            ul li {
+                font-size: 0.8rem;
+            }
+        }
+    }
 }
 
-::ng-deep .mat-step-header .mat-step-label.mat-step-label-active {
-    color: #333 !important;
-    font-weight: 500;
+// Extra small screens
+@media (max-width: 400px) {
+    ::ng-deep .mat-step-text-label {
+        display: none !important; // Hide labels completely on very small screens
+    }
+
+    ::ng-deep .mat-step-header {
+        padding: 0 4px !important;
+    }
+
+    ::ng-deep .mat-step-icon {
+        width: 20px !important;
+        height: 20px !important;
+        font-size: 10px !important;
+    }
+}
+
+// Chatbot Selection Styles
+.chatbot-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--divider-color);
+
+    h3 {
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+}
+
+.chatbot-options {
+    display: flex;
+    gap: 1rem;
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+    }
+}
+
+.chatbot-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: var(--bg-card);
+
+    &:hover {
+        border-color: #90caf9;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    &.selected {
+        border-color: #3b82f6;
+        background-color: #f0f7ff;
+    }
+
+    .chatbot-icon {
+        font-size: 2.5rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        color: #3b82f6;
+
+        &.whatsapp {
+            color: #25d366;
+        }
+    }
+
+    .chatbot-info {
+        flex: 1;
+
+        h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+            color: var(--text-heading);
+        }
+
+        p {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .price-tag {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+
+            &.included {
+                background-color: #e8f5e9;
+                color: #2e7d32;
+            }
+
+            &.extra {
+                background-color: #fff3e0;
+                color: #e65100;
+            }
+        }
+    }
+
+    .radio-indicator {
+        color: #ddd;
+
+        mat-icon {
+            font-size: 1.5rem;
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+    }
+
+    &.selected .radio-indicator {
+        color: #3b82f6;
+    }
+}
+
+// Price Summary Styles
+.price-summary {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+
+        &.total {
+            border-top: 1px solid #ddd;
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: bold;
+            color: var(--text-heading);
+            font-size: 1.1rem;
+        }
+    }
 }

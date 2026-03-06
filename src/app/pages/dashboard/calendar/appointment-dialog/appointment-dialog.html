@@ -13,10 +13,11 @@
         <!-- Client Selection -->
         <mat-form-field appearance="outline" class="full-width">
             <mat-label>Cliente</mat-label>
-            <input type="text" matInput formControlName="nombre_cliente_manual" [matAutocomplete]="auto">
+            <input type="text" matInput formControlName="nombre_cliente_manual" [matAutocomplete]="auto"
+                #autoTrigger="matAutocompleteTrigger" (focus)="autoTrigger.openPanel()">
             <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onClientSelected($event)">
                 <mat-option *ngFor="let client of filteredClients | async" [value]="client.nombre">
-                    {{client.nombre}}
+                    {{client.nombre}} <span class="client-phone" *ngIf="client.telefono"> — {{client.telefono}}</span>
                 </mat-option>
             </mat-autocomplete>
         </mat-form-field>

@@ -31,6 +31,7 @@ export class BranchDialog {
   loading = false;
   isEdit = false;
   hidePassword = true;
+  stripeLoading = false;
 
   constructor(
     private fb: FormBuilder,
@@ -47,6 +48,7 @@ export class BranchDialog {
     this.form = this.fb.group({
       nombre: [data?.nombre || '', Validators.required],
       direccion: [data?.direccion || '', Validators.required],
+      telefono: [data?.telefono || '', [Validators.required, Validators.pattern(/^\+?[0-9]{10,15}$/)]],
       cuenta_email: [data?.cuenta_email || '', [Validators.required, Validators.email]],
       cuenta_password: [data?.cuenta_password || '', this.isEdit ? [] : [Validators.required, Validators.minLength(6)]]
     });
@@ -70,11 +72,12 @@ export class BranchDialog {
         negocioId = profile?.negocio_id;
       }
 
-      const { nombre, direccion, cuenta_email, cuenta_password } = this.form.value;
+      const { nombre, direccion, telefono, cuenta_email, cuenta_password } = this.form.value;
 
       const branchData: any = {
         nombre,
         direccion,
+        telefono,
         cuenta_email,
         negocio_id: negocioId
       };
@@ -141,4 +144,40 @@ export class BranchDialog {
       });
     }
   }
+
+  async connectStripe() {
+    this.stripeLoading = true;
+    try {
+      const { data, error } = await this.supabase.client.functions.invoke('stripe-connect-onboarding', {
+        body: {
+          sucursal_id: this.data.id,
+          refresh_url: window.location.href, // Go back to dashboard on refresh
+          return_url: window.location.href   // Go back to dashboard on success
+        }
+      });
+
+      if (error) {
+        let errorMsg = error.message;
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            errorMsg = body.error || errorMsg;
+          }
+        } catch (e) { }
+        console.error('Detailed Edge Function Error:', errorMsg);
+        throw new Error(errorMsg || 'Error invocando función de Stripe');
+      }
+
+      if (data && data.url) {
+        window.location.href = data.url; // Redirect to Stripe Express Onboarding
+      } else {
+        throw new Error('No se recibió la URL de Stripe');
+      }
+    } catch (err: any) {
+      console.error('Error connecting Stripe:', err);
+      this.snackBar.open(err.message || 'Error al conectar con Stripe', 'Cerrar', { duration: 3000 });
+      this.stripeLoading = false;
+    }
+  }
 }
+

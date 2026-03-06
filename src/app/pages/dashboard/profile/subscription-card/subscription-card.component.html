@@ -1,0 +1,80 @@
+<mat-card class="subscription-card">
+    <mat-card-header>
+        <mat-icon class="header-icon">credit_card</mat-icon>
+        <mat-card-title>Tu Suscripción</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <div *ngIf="loading" class="spinner-container">
+            <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <div *ngIf="!loading && currentSubscription" class="subscription-details">
+            <!-- Current Plan -->
+            <div class="current-plan-section">
+                <div class="plan-badge" [ngClass]="currentSubscription.planes?.codigo">
+                    <mat-icon>{{ getPlanIcon(currentSubscription.planes?.codigo) }}</mat-icon>
+                    <div>
+                        <span class="plan-label">Plan actual</span>
+                        <span class="plan-name">{{ getPlanName(currentSubscription.planes?.codigo) }}</span>
+                    </div>
+                </div>
+
+                <div class="plan-features">
+                    <div class="feature" *ngFor="let feature of getFeatures(currentSubscription.planes?.codigo)">
+                        <mat-icon>check_circle</mat-icon>
+                        <span>{{ feature }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Upgrade Options (only for free or basic) -->
+            <div class="upgrade-section" *ngIf="currentSubscription.planes?.codigo !== 'regular'">
+                <h3>
+                    <mat-icon>upgrade</mat-icon>
+                    Mejorar plan
+                </h3>
+
+                <div class="upgrade-buttons">
+                    <button mat-raised-button class="upgrade-btn basic"
+                        *ngIf="currentSubscription.planes?.codigo === 'free'" (click)="upgradePlan('basic')"
+                        [disabled]="loading">
+                        <mat-icon>star</mat-icon>
+                        Mejorar a: Plan Básico
+                        <span class="price-tag">$219/mes</span>
+                    </button>
+
+                    <button mat-raised-button class="upgrade-btn advanced"
+                        *ngIf="['free', 'basic'].includes(currentSubscription.planes?.codigo)"
+                        (click)="upgradePlan('regular')" [disabled]="loading">
+                        <mat-icon>rocket_launch</mat-icon>
+                        Mejorar a: Plan Avanzado
+                        <span class="price-tag">$499/mes</span>
+                    </button>
+                </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Subscription End Date -->
+            <div class="subscription-end">
+                <mat-icon>event</mat-icon>
+                <span *ngIf="getEndDate()">
+                    Tu suscripción {{ isTrialing() ? 'de prueba ' : '' }}acabará el
+                    <strong>{{ getEndDate() }}</strong>
+                </span>
+                <span *ngIf="!getEndDate() && currentSubscription.estado === 'active'">
+                    Suscripción activa
+                </span>
+            </div>
+        </div>
+
+        <div *ngIf="!loading && !currentSubscription" class="empty-state">
+            <mat-icon>info</mat-icon>
+            <p>No se encontró información de suscripción activa.</p>
+            <button mat-button color="primary" (click)="loadSubscription()">Reintentar</button>
+        </div>
+    </mat-card-content>
+</mat-card>

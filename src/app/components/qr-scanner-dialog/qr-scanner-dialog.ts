@@ -59,7 +59,7 @@ import { Html5Qrcode } from 'html5-qrcode';
       display: block;
     }
     .qr-dialog-card {
-      background: white;
+      background: var(--dialog-bg);
       border-radius: 16px;
       overflow: hidden;
     }
@@ -90,7 +90,7 @@ import { Html5Qrcode } from 'html5-qrcode';
     }
     .instructions {
       text-align: center;
-      color: #666;
+      color: var(--text-secondary);
       margin-bottom: 20px;
     }
     .scanner-options {
@@ -137,7 +137,7 @@ import { Html5Qrcode } from 'html5-qrcode';
     }
     mat-dialog-actions {
       padding: 16px 24px !important;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid var(--divider-color);
     }
   `]
 })

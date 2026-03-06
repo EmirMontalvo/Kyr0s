@@ -1,6 +1,6 @@
 :host {
     display: block;
-    background-color: white;
+    background-color: var(--dialog-bg);
     border-radius: 4px;
 }
 
@@ -41,12 +41,12 @@ mat-dialog-content {
     .upload-label {
         display: block;
         font-size: 14px;
-        color: rgba(0, 0, 0, 0.6);
+        color: var(--text-secondary);
         margin-bottom: 8px;
     }
 
     .upload-area {
-        border: 2px dashed #ccc;
+        border: 2px dashed var(--border-color);
         border-radius: 8px;
         padding: 24px;
         text-align: center;

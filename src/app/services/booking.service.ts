@@ -5,23 +5,27 @@ export interface ChatMessage {
     id: string;
     content: string;
     sender: 'bot' | 'user';
-    type: 'text' | 'services' | 'datetime' | 'employees' | 'confirmation';
+    type: 'text' | 'services' | 'datetime' | 'employees' | 'confirmation' | 'details_input';
     data?: any;
     timestamp: Date;
 }
 
 export interface BookingState {
-    step: 'welcome' | 'services' | 'customer_info' | 'datetime' | 'employee' | 'confirm' | 'done';
+    step: 'welcome' | 'services' | 'details' | 'customer_info' | 'datetime' | 'employee' | 'confirm' | 'payment' | 'done';
     sucursalId: number | null;
     sucursalNombre: string;
     sucursalTelefono: string;
     selectedServices: any[];
     customerName: string;
     customerPhone: string;
+    customerEmail: string;
     selectedDate: Date | null;
     selectedTime: string;
     selectedEmployeeId: number | null;
     selectedEmployeeName: string;
+    description?: string;
+    photoUrls?: string[];
+    pendingCitaId?: number;
 }
 
 @Injectable({
@@ -41,10 +45,14 @@ export class BookingService {
             selectedServices: [],
             customerName: '',
             customerPhone: '',
+            customerEmail: '',
             selectedDate: null,
             selectedTime: '',
             selectedEmployeeId: null,
-            selectedEmployeeName: ''
+            selectedEmployeeName: '',
+            description: '',
+            photoUrls: [],
+            pendingCitaId: undefined
         };
     }
 
@@ -168,10 +176,22 @@ export class BookingService {
         const startHour = parseInt(schedule.hora_inicio.split(':')[0]);
         const endHour = parseInt(schedule.hora_fin.split(':')[0]);
 
+        const now = new Date();
+        const isToday = now.getDate() === date.getDate() &&
+            now.getMonth() === date.getMonth() &&
+            now.getFullYear() === date.getFullYear();
+
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
         for (let h = startHour; h < endHour; h++) {
             for (let m = 0; m < 60; m += 30) {
                 const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
                 const slotMinutes = h * 60 + m;
+
+                // If today, filter out past slots + 30 min buffer
+                if (isToday && slotMinutes < currentMinutes + 30) {
+                    continue;
+                }
 
                 // Check if slot overlaps with any existing appointment
                 // Compare times as strings/minutes to avoid timezone issues
@@ -211,7 +231,7 @@ export class BookingService {
         return slots;
     }
 
-    async findOrCreateCustomer(name: string, phone: string, sucursalId: number) {
+    async findOrCreateCustomer(name: string, phone: string, email: string, sucursalId: number) {
         // Get negocio_id from sucursal
         const { data: sucursal } = await this.supabase.client
             .from('sucursales')
@@ -229,7 +249,16 @@ export class BookingService {
             .eq('negocio_id', sucursal.negocio_id)
             .single();
 
-        if (existing) return existing.id;
+        if (existing) {
+            // Update email if provided and not already set
+            if (email) {
+                await this.supabase.client
+                    .from('clientes_bot')
+                    .update({ email })
+                    .eq('id', existing.id);
+            }
+            return existing.id;
+        }
 
         // Create new customer
         const { data: newCustomer, error } = await this.supabase.client
@@ -237,6 +266,7 @@ export class BookingService {
             .insert({
                 nombre: name,
                 telefono: phone,
+                email: email,
                 plataforma: 'web_chat',
                 chat_id: `web_${Date.now()}`,
                 negocio_id: sucursal.negocio_id
@@ -246,6 +276,30 @@ export class BookingService {
 
         if (error) throw error;
         return newCustomer?.id;
+    }
+
+    async uploadFiles(files: File[]): Promise<string[]> {
+        const urls: string[] = [];
+        for (const file of files) {
+            const fileName = `citas/${Date.now()}_${file.name}`;
+            const { data, error } = await this.supabase.client
+                .storage
+                .from('citas-files')
+                .upload(fileName, file);
+
+            if (error) {
+                console.error('Error uploading file:', error);
+                continue;
+            }
+
+            const { data: publicUrlData } = this.supabase.client
+                .storage
+                .from('citas-files')
+                .getPublicUrl(fileName);
+
+            urls.push(publicUrlData.publicUrl);
+        }
+        return urls;
     }
 
     async createAppointment() {
@@ -286,27 +340,37 @@ export class BookingService {
 
         console.log('[BookingService] Sucursal:', sucursal);
 
-        // Find or create customer
+        // Find or create customer (now with email)
         const clienteId = await this.findOrCreateCustomer(
             state.customerName,
             state.customerPhone,
+            state.customerEmail,
             state.sucursalId!
         );
 
         console.log('[BookingService] Cliente ID:', clienteId);
 
-        // Create appointment
+        // Calculate total amount
+        const montoBase = this.calculateTotal();
+
+        // Create appointment with pending payment status
         const appointmentData = {
             fecha_hora_inicio: startDateTime,
             fecha_hora_fin: endDateTime,
             empleado_id: state.selectedEmployeeId,
             sucursal_id: state.sucursalId,
             cliente_id: clienteId,
-            estado: 'pendiente',
+            estado: 'pendiente_pago', // Changed from 'pendiente' to 'pendiente_pago'
+            estado_pago: 'pendiente',
             negocio_id: sucursal?.negocio_id,
-            nombre_cliente_manual: state.customerName
+            nombre_cliente_manual: state.customerName,
+            descripcion: state.description,
+            fotos_referencia: state.photoUrls && state.photoUrls.length > 0 ? state.photoUrls : null,
+            monto_total: montoBase,
+            cliente_email: state.customerEmail
         };
 
+        console.log('[BookingService] State photoUrls:', state.photoUrls);
         console.log('[BookingService] Inserting appointment:', appointmentData);
 
         const { data: cita, error: citaError } = await this.supabase.client
@@ -330,6 +394,96 @@ export class BookingService {
             .from('citas_servicios')
             .insert(servicesToInsert);
 
+        // Store pending cita ID in state
+        this.setState({ pendingCitaId: cita!.id });
+
         return cita;
+    }
+
+    /**
+     * Calculate total price of selected services
+     */
+    calculateTotal(): number {
+        return this.state.selectedServices.reduce(
+            (sum, s) => sum + (s.precio_base || 0), 0
+        );
+    }
+
+    /**
+     * Initiate payment by calling Edge Function
+     */
+    async initiatePayment(): Promise<{ url: string; montoTotal: number } | null> {
+        const state = this.state;
+        if (!state.pendingCitaId || !state.sucursalId) {
+            console.error('[BookingService] Missing pendingCitaId or sucursalId');
+            return null;
+        }
+
+        const montoBase = this.calculateTotal();
+        const serviciosNombres = state.selectedServices.map(s => s.nombre).join(', ');
+
+        try {
+            const response = await fetch(
+                `https://qyyhembukflbxjbctuav.supabase.co/functions/v1/create-appointment-checkout`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cita_id: state.pendingCitaId,
+                        monto_base: montoBase,
+                        sucursal_id: state.sucursalId,
+                        cliente_email: state.customerEmail,
+                        cliente_nombre: state.customerName,
+                        servicios_nombres: serviciosNombres
+                    })
+                }
+            );
+
+            const data = await response.json();
+            if (data.error) {
+                console.error('[BookingService] Payment initiation error:', data.error);
+                return null;
+            }
+
+            return { url: data.url, montoTotal: data.monto_total };
+        } catch (error) {
+            console.error('[BookingService] Payment initiation failed:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Cancel a pending appointment (called when user cancels payment)
+     */
+    async cancelPendingAppointment(): Promise<void> {
+        const citaId = this.state.pendingCitaId;
+        if (!citaId) return;
+
+        try {
+            // Delete associated services first
+            await this.supabase.client
+                .from('citas_servicios')
+                .delete()
+                .eq('cita_id', citaId);
+
+            // Delete the appointment
+            await this.supabase.client
+                .from('citas')
+                .delete()
+                .eq('id', citaId);
+
+            console.log('[BookingService] Cancelled pending appointment:', citaId);
+        } catch (error) {
+            console.error('[BookingService] Error cancelling appointment:', error);
+        }
+    }
+
+    /**
+     * Confirm payment was successful (update local state)
+     */
+    confirmPaymentSuccess(): void {
+        this.setState({ step: 'done' });
     }
 }

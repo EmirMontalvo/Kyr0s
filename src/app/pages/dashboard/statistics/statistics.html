@@ -60,6 +60,70 @@
             </mat-card-content>
         </mat-card>
 
+        <!-- Owner: Revenue Chart -->
+        <mat-card *ngIf="isOwner" class="chart-card full-width revenue-card" (click)="openFullscreen('revenue')">
+            <mat-card-header>
+                <mat-card-title>
+                    <mat-icon>attach_money</mat-icon>
+                    Ingresos
+                </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <!-- Branch Selector for Revenue -->
+                <mat-form-field appearance="outline" class="branch-select" (click)="$event.stopPropagation()">
+                    <mat-label>Ver ingresos de</mat-label>
+                    <mat-select [value]="selectedRevenueBranch" (selectionChange)="onRevenueBranchChange($event.value)">
+                        <mat-option value="general">General (Todas las sucursales)</mat-option>
+                        <mat-option *ngFor="let branch of branches" [value]="branch.id">
+                            {{ branch.nombre }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- View Mode Toggle -->
+                <div class="revenue-controls">
+                    <mat-button-toggle-group [value]="revenueViewMode" (change)="setRevenueViewMode($event.value)"
+                        (click)="$event.stopPropagation()">
+                        <mat-button-toggle value="day">Día</mat-button-toggle>
+                        <mat-button-toggle value="week">Semana</mat-button-toggle>
+                        <mat-button-toggle value="month">Mes</mat-button-toggle>
+                    </mat-button-toggle-group>
+                </div>
+
+                <!-- Period Navigation -->
+                <div class="period-navigation">
+                    <button mat-icon-button (click)="navigatePeriod('prev'); $event.stopPropagation()">
+                        <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    <span class="period-label">{{ revenuePeriodLabel }}</span>
+                    <button mat-icon-button (click)="navigatePeriod('next'); $event.stopPropagation()">
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                </div>
+
+                <!-- Total Revenue -->
+                <div class="revenue-total">
+                    <span class="total-label">Total:</span>
+                    <span class="total-amount">${{ revenueTotal | number:'1.2-2' }}</span>
+                </div>
+
+                <!-- Revenue Chart -->
+                <div class="revenue-chart" *ngIf="revenueData.length > 0">
+                    <ngx-charts-bar-vertical [results]="revenueData" [xAxis]="true" [yAxis]="true" [legend]="false"
+                        [showXAxisLabel]="true" [showYAxisLabel]="true"
+                        [xAxisLabel]="revenueViewMode === 'day' ? 'Hora' : (revenueViewMode === 'week' ? 'Día' : 'Día del Mes')"
+                        [yAxisLabel]="'Ingresos ($)'" [scheme]="colorScheme" [gradient]="true">
+                    </ngx-charts-bar-vertical>
+                </div>
+
+                <div *ngIf="revenueData.length === 0 || revenueTotal === 0" class="no-data">
+                    <mat-icon>trending_up</mat-icon>
+                    <p>No hay ingresos registrados para este período</p>
+                    <small>Los ingresos se registran al marcar citas como completadas</small>
+                </div>
+            </mat-card-content>
+        </mat-card>
+
         <!-- Branch User: Popular Services in their Branch -->
         <mat-card *ngIf="!isOwner && servicesByBranch.length > 0" class="chart-card"
             (click)="openFullscreen('services-branch-user')">
@@ -74,17 +138,18 @@
         </mat-card>
 
         <!-- Branch User: Revenue Chart -->
-        <mat-card *ngIf="!isOwner" class="chart-card full-width revenue-card">
+        <mat-card *ngIf="!isOwner" class="chart-card full-width revenue-card" (click)="openFullscreen('revenue')">
             <mat-card-header>
                 <mat-card-title>
                     <mat-icon>attach_money</mat-icon>
                     Ingresos
                 </mat-card-title>
             </mat-card-header>
-            <mat-card-content (click)="$event.stopPropagation()">
+            <mat-card-content>
                 <!-- View Mode Toggle -->
                 <div class="revenue-controls">
-                    <mat-button-toggle-group [value]="revenueViewMode" (change)="setRevenueViewMode($event.value)">
+                    <mat-button-toggle-group [value]="revenueViewMode" (change)="setRevenueViewMode($event.value)"
+                        (click)="$event.stopPropagation()">
                         <mat-button-toggle value="day">Día</mat-button-toggle>
                         <mat-button-toggle value="week">Semana</mat-button-toggle>
                         <mat-button-toggle value="month">Mes</mat-button-toggle>
@@ -93,11 +158,11 @@
 
                 <!-- Period Navigation -->
                 <div class="period-navigation">
-                    <button mat-icon-button (click)="navigatePeriod('prev')">
+                    <button mat-icon-button (click)="navigatePeriod('prev'); $event.stopPropagation()">
                         <mat-icon>chevron_left</mat-icon>
                     </button>
                     <span class="period-label">{{ revenuePeriodLabel }}</span>
-                    <button mat-icon-button (click)="navigatePeriod('next')">
+                    <button mat-icon-button (click)="navigatePeriod('next'); $event.stopPropagation()">
                         <mat-icon>chevron_right</mat-icon>
                     </button>
                 </div>
@@ -181,6 +246,58 @@
                 <ngx-charts-pie-chart [results]="servicesByBranch" [legend]="true" [legendTitle]="'Servicios'"
                     [scheme]="colorScheme" [labels]="true" [doughnut]="true">
                 </ngx-charts-pie-chart>
+            </div>
+
+            <!-- Revenue Fullscreen -->
+            <div *ngIf="fullscreenChart === 'revenue'" class="fullscreen-chart revenue-fullscreen">
+                <h3>Ingresos</h3>
+
+                <!-- Branch Selector (only for owner) -->
+                <mat-form-field *ngIf="isOwner" appearance="outline" class="branch-select">
+                    <mat-label>Ver ingresos de</mat-label>
+                    <mat-select [value]="selectedRevenueBranch" (selectionChange)="onRevenueBranchChange($event.value)">
+                        <mat-option value="general">General (Todas las sucursales)</mat-option>
+                        <mat-option *ngFor="let branch of branches" [value]="branch.id">
+                            {{ branch.nombre }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <div class="revenue-controls">
+                    <mat-button-toggle-group [value]="revenueViewMode" (change)="setRevenueViewMode($event.value)">
+                        <mat-button-toggle value="day">Día</mat-button-toggle>
+                        <mat-button-toggle value="week">Semana</mat-button-toggle>
+                        <mat-button-toggle value="month">Mes</mat-button-toggle>
+                    </mat-button-toggle-group>
+                </div>
+
+                <div class="period-navigation">
+                    <button mat-icon-button (click)="navigatePeriod('prev')">
+                        <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    <span class="period-label">{{ revenuePeriodLabel }}</span>
+                    <button mat-icon-button (click)="navigatePeriod('next')">
+                        <mat-icon>chevron_right</mat-icon>
+                    </button>
+                </div>
+
+                <div class="revenue-total">
+                    <span class="total-label">Total:</span>
+                    <span class="total-amount">${{ revenueTotal | number:'1.2-2' }}</span>
+                </div>
+
+                <div class="revenue-chart" *ngIf="revenueData.length > 0">
+                    <ngx-charts-bar-vertical [results]="revenueData" [xAxis]="true" [yAxis]="true" [legend]="false"
+                        [showXAxisLabel]="true" [showYAxisLabel]="true"
+                        [xAxisLabel]="revenueViewMode === 'day' ? 'Hora' : (revenueViewMode === 'week' ? 'Día' : 'Día del Mes')"
+                        [yAxisLabel]="'Ingresos ($)'" [scheme]="colorScheme" [gradient]="true">
+                    </ngx-charts-bar-vertical>
+                </div>
+
+                <div *ngIf="revenueData.length === 0 || revenueTotal === 0" class="no-data">
+                    <mat-icon>trending_up</mat-icon>
+                    <p>No hay ingresos registrados para este período</p>
+                </div>
             </div>
         </mat-card>
     </div>

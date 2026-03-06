@@ -2,6 +2,6 @@ services:
   web:
     build: .
     ports:
-      - "4200:80"
+      - "4201:80"
     container_name: kyros-barber-web
     restart: always

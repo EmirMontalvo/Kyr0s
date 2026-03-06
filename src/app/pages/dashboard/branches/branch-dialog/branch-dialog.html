@@ -17,6 +17,14 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Teléfono</mat-label>
+            <input matInput formControlName="telefono" placeholder="Ej: +52 1234567890">
+            <mat-icon matPrefix>phone</mat-icon>
+            <mat-error *ngIf="form.get('telefono')?.hasError('required')">Requerido</mat-error>
+            <mat-error *ngIf="form.get('telefono')?.hasError('pattern')">Formato inválido (10-15 dígitos)</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
             <mat-label>Correo de la Sucursal</mat-label>
             <input matInput formControlName="cuenta_email" type="email" placeholder="sucursal@ejemplo.com">
             <mat-error *ngIf="form.get('cuenta_email')?.hasError('required')">Requerido</mat-error>
@@ -35,6 +43,49 @@
             <mat-error *ngIf="form.get('cuenta_password')?.hasError('minlength')">Mínimo 6 caracteres</mat-error>
         </mat-form-field>
     </form>
+
+    <!-- Stripe Connect Section -->
+    <div class="stripe-section" *ngIf="isEdit">
+        <h3 class="section-title">Pagos con Stripe (WhatsApp)</h3>
+        <p class="section-subtitle">Vincula una cuenta para recibir pagos directos de esta sucursal.</p>
+
+        <div class="stripe-status-box"
+            [ngClass]="{'connected': data.stripe_account_id || data.stripe_onboarding_complete}">
+
+            <!-- Top row: icon + info -->
+            <div class="stripe-top-row">
+                <div class="stripe-icon-wrap">
+                    <mat-icon>{{ (data.stripe_account_id || data.stripe_onboarding_complete) ? 'check_circle' :
+                        'account_balance' }}</mat-icon>
+                </div>
+                <div class="status-texts">
+                    <p class="status-title">{{ (data.stripe_account_id || data.stripe_onboarding_complete) ? 'Cuenta
+                        Conectada ✅' : 'No Configurado' }}</p>
+                    <p class="status-desc">
+                        <ng-container *ngIf="data.stripe_account_id || data.stripe_onboarding_complete">
+                            Esta sucursal ya puede recibir pagos mediante el Chatbot.
+                            <br><small style="opacity:0.65">ID: {{ data.stripe_account_id }}</small>
+                        </ng-container>
+                        <ng-container *ngIf="!data.stripe_account_id && !data.stripe_onboarding_complete">
+                            Se redirigirá a Stripe para completar el proceso de pago seguro.
+                        </ng-container>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Bottom row: action button -->
+            <div class="stripe-action-row">
+                <button mat-flat-button
+                    [color]="(data.stripe_account_id || data.stripe_onboarding_complete) ? 'accent' : 'primary'"
+                    class="stripe-action-btn" (click)="connectStripe()" [disabled]="stripeLoading || !data.id">
+                    <mat-icon>{{ (data.stripe_account_id || data.stripe_onboarding_complete) ? 'open_in_new' : 'link'
+                        }}</mat-icon>
+                    {{ stripeLoading ? 'Conectando...' : ((data.stripe_account_id || data.stripe_onboarding_complete) ?
+                    'Ver Tablero de Stripe' : 'Conectar Cuenta Bancaria') }}
+                </button>
+            </div>
+        </div>
+    </div>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
     <button mat-button mat-dialog-close>Cancelar</button>

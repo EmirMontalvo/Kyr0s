@@ -2,7 +2,7 @@
     <mat-sidenav #drawer class="sidenav" fixedInViewport [attr.role]="isHandset ? 'dialog' : 'navigation'"
         [mode]="isHandset ? 'over' : 'side'" [opened]="isHandset === false">
         <mat-toolbar style="height: auto; padding: 20px; justify-content: space-between; align-items: flex-start;">
-            <img src="assets/images/logo-text.png" alt="Kyros Barber" style="max-width: 180px; height: auto;">
+            <img src="assets/images/logo-text.png" alt="Kyros Barber" class="sidebar-logo">
             <button mat-icon-button (click)="drawer.close()" *ngIf="isHandset">
                 <mat-icon>close</mat-icon>
             </button>
@@ -13,6 +13,18 @@
                 <mat-icon matListItemIcon>{{item.icon}}</mat-icon>
                 <span matListItemTitle>{{item.label}}</span>
             </a>
+
+            <mat-divider></mat-divider>
+
+            <!-- Dark Mode Toggle -->
+            <div class="dark-mode-toggle">
+                <span class="toggle-label">
+                    <mat-icon>{{ (themeService.isDarkMode$ | async) ? 'dark_mode' : 'light_mode' }}</mat-icon>
+                    {{ (themeService.isDarkMode$ | async) ? 'Modo Oscuro' : 'Modo Claro' }}
+                </span>
+                <mat-slide-toggle [checked]="themeService.isDarkMode$ | async" (change)="themeService.toggle()">
+                </mat-slide-toggle>
+            </div>
 
             <mat-divider></mat-divider>
 
@@ -44,3 +56,6 @@
         </div>
     </mat-sidenav-content>
 </mat-sidenav-container>
+
+<!-- AI Chat Assistant (Plan Avanzado only) -->
+<app-ai-chat></app-ai-chat>

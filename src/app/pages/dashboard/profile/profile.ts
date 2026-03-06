@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDividerModule } from '@angular/material/divider';
 import { SupabaseService } from '../../../services/supabase.service';
 import { AuthService } from '../../../services/auth';
+import { SubscriptionCardComponent } from './subscription-card/subscription-card.component';
 import * as QRCode from 'qrcode';
 
 @Component({
@@ -30,14 +31,15 @@ import * as QRCode from 'qrcode';
     MatProgressSpinnerModule,
     MatCheckboxModule,
     MatSelectModule,
-    MatDividerModule
+    MatDividerModule,
+    SubscriptionCardComponent
   ],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })
 export class Profile implements OnInit {
-  form: FormGroup;
-  scheduleForm: FormGroup;
+  form!: FormGroup;
+  scheduleForm!: FormGroup;
   loading = false;
   savingSchedule = false;
   avatarUrl: string | null = null;
@@ -46,6 +48,7 @@ export class Profile implements OnInit {
   sucursalId: number | null = null;
   sucursalNombre: string = '';
   qrCodeUrl: string | null = null;
+  negocioId: string | null = null;
 
   // Day labels
   days = [
@@ -109,6 +112,7 @@ export class Profile implements OnInit {
         .select(`
           nombre,
           avatar_url,
+          negocio_id,
           negocios (nombre)
         `)
         .eq('id', user.id)
@@ -117,6 +121,7 @@ export class Profile implements OnInit {
       if (error) throw error;
 
       if (profile) {
+        this.negocioId = profile.negocio_id;
         const negocio = Array.isArray(profile.negocios) ? profile.negocios[0] : profile.negocios;
         this.form.patchValue({
           nombre: profile.nombre,
@@ -298,7 +303,8 @@ export class Profile implements OnInit {
   }
 
   async updateProfile() {
-    if (this.form.invalid || !this.userId) return;
+    const currentUserId = this.userId;
+    if (this.form.invalid || !currentUserId) return;
     this.loading = true;
 
     try {
@@ -308,7 +314,7 @@ export class Profile implements OnInit {
         .update({
           nombre: this.form.value.nombre
         })
-        .eq('id', this.userId);
+        .eq('id', currentUserId);
 
       if (error) throw error;
 

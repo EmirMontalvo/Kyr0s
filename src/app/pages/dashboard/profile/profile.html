@@ -57,6 +57,9 @@
             </div>
         </form>
 
+        <!-- Subscription Card (Owner Only) -->
+        <app-subscription-card *ngIf="!isBranchUser && negocioId" [negocioId]="negocioId"></app-subscription-card>
+
         <!-- Schedule Configuration (Branch Users Only) -->
         <div *ngIf="isBranchUser" class="schedule-section">
             <mat-divider></mat-divider>

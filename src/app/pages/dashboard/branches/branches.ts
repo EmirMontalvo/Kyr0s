@@ -28,7 +28,7 @@ import { Sucursal } from '../../../models';
   styleUrl: './branches.scss',
 })
 export class Branches implements OnInit {
-  displayedColumns: string[] = ['id', 'nombre', 'direccion', 'acciones'];
+  displayedColumns: string[] = ['id', 'nombre', 'telefono', 'direccion', 'acciones'];
   dataSource: Sucursal[] = [];
   loading = false;
   negocioId: number | null = null;
@@ -88,7 +88,12 @@ export class Branches implements OnInit {
     });
   }
 
-  openDialog(sucursal?: any) {
+  async openDialog(sucursal?: any) {
+    if (!sucursal) { // Checks only for new branch creation
+      const canCreate = await this.checkBranchLimit();
+      if (!canCreate) return;
+    }
+
     const dialogRef = this.dialog.open(BranchDialog, {
       width: '400px',
       data: sucursal
@@ -101,6 +106,46 @@ export class Branches implements OnInit {
         this.loadBranches();
       }
     });
+  }
+
+  async checkBranchLimit(): Promise<boolean> {
+    if (!this.negocioId) return false;
+
+    // 1. Get current branch count
+    const { count, error: countError } = await this.supabase.client
+      .from('sucursales')
+      .select('*', { count: 'exact', head: true })
+      .eq('negocio_id', this.negocioId);
+
+    if (countError) {
+      console.error('Error counting branches:', countError);
+      return false;
+    }
+
+    // 2. Get Subscription Limit
+    const { data: sub, error: subError } = await this.supabase.client
+      .from('negocio_suscripciones')
+      .select('planes!inner(limite_sucursales, nombre)')
+      .eq('negocio_id', this.negocioId)
+      .single();
+
+    if (subError) {
+      console.error('Error fetching subscription:', subError);
+      // Fallback: allow 1 branch if no sub found (shouldn't happen)
+      if (!count || count < 1) return true;
+      this.snackBar.open('Error verificando suscripción. Contacta soporte.', 'Cerrar');
+      return false;
+    }
+
+    const limit = (sub.planes as any)?.limite_sucursales || 1;
+    const current = count || 0;
+
+    if (current >= limit) {
+      this.snackBar.open(`Has alcanzado el límite de sucursales (${limit}) de tu ${(sub.planes as any)?.nombre}. Actualiza tu plan para agregar más.`, 'Ver Planes', { duration: 5000 });
+      return false;
+    }
+
+    return true;
   }
 
   openHoursDialog(sucursal: Sucursal) {

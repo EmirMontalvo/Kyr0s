@@ -83,7 +83,7 @@ interface Notification {
     }
     
     ::ng-deep .mat-mdc-menu-panel {
-      background: white !important;
+      background: var(--dropdown-bg) !important;
       overflow-x: hidden !important;
     }
     
@@ -93,7 +93,7 @@ interface Notification {
       align-items: center;
       padding: 12px 16px;
       font-weight: 500;
-      background: white;
+      background: var(--dropdown-bg);
     }
     
     .notification-list {
@@ -101,7 +101,7 @@ interface Notification {
       overflow-y: auto;
       overflow-x: hidden;
       min-width: 320px;
-      background: white;
+      background: var(--dropdown-bg);
     }
     
     .empty-state {
@@ -110,7 +110,7 @@ interface Notification {
       align-items: center;
       padding: 32px;
       color: #94a3b8;
-      background: white;
+      background: var(--dropdown-bg);
       
       mat-icon {
         font-size: 48px;
@@ -126,14 +126,14 @@ interface Notification {
       padding: 12px 16px;
       cursor: pointer;
       transition: background 0.2s;
-      background: white;
+      background: var(--dropdown-bg);
       
       &:hover {
-        background: #f1f5f9;
+        background: var(--dropdown-hover);
       }
       
       &.unread {
-        background: #eff6ff;
+        background: var(--hover-overlay);
       }
       
       mat-icon {
@@ -157,12 +157,12 @@ interface Notification {
         
         .message {
           font-size: 13px;
-          color: #64748b;
+          color: var(--text-secondary);
         }
         
         .time {
           font-size: 12px;
-          color: #94a3b8;
+          color: var(--text-secondary);
           margin-top: 4px;
         }
       }

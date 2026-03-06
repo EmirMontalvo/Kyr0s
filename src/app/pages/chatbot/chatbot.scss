@@ -2,30 +2,50 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    max-width: 600px;
-    margin: 0 auto;
-    background: #f0f2f5;
+    width: 100%;
+    margin: 0;
+    background: var(--bg-secondary);
+    overflow-x: hidden; // Prevent horizontal scroll
 }
 
 // Header - Changed to blue gradient
 .chat-header {
     background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
     color: white;
-    padding: 16px 20px;
+    padding: 12px 16px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .close-btn {
+        color: white !important;
+        margin-right: -8px;
+
+        mat-icon {
+            font-size: 24px;
+            color: white !important;
+        }
+
+        ::ng-deep .mat-icon {
+            color: white !important;
+        }
+    }
 
     .header-content {
         display: flex;
         align-items: center;
         gap: 12px;
+        flex: 1;
 
         .logo {
-            height: 32px;
+            height: 28px;
             filter: brightness(0) invert(1);
         }
 
         .title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
         }
     }
@@ -39,6 +59,19 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box; // Ensure padding fits defined width
+
+    // Hide scrollbar but keep functionality
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+    }
 }
 
 .loading-state {
@@ -47,14 +80,16 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #64748b;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 20px;
 }
 
 .message-wrapper {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    max-width: 85%;
+    max-width: 90%; // Increased for max width
 
     &.bot {
         align-self: flex-start;
@@ -67,8 +102,8 @@
 }
 
 .avatar {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: #3b82f6;
     display: flex;
@@ -78,9 +113,9 @@
 
     mat-icon {
         color: white;
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
     }
 
     &.user-avatar {
@@ -89,14 +124,21 @@
 }
 
 .message-bubble {
-    padding: 12px 16px;
-    border-radius: 18px;
-    background: white;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: var(--bg-card);
+    box-shadow: 0 1px 2px var(--card-shadow);
+    word-break: break-word; // Prevent overflow from long words
+    font-size: 0.95rem;
 
     .user & {
         background: #3b82f6;
         color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .bot & {
+        border-top-left-radius: 4px;
     }
 }
 
@@ -105,34 +147,38 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    width: 100%;
 
     button {
         display: flex;
         align-items: center;
         gap: 8px;
+        white-space: normal; // Allow text wrap
+        height: auto;
+        padding: 8px 16px;
+        line-height: 1.4;
     }
 }
 
 // Services Grid
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); // Responsive grid
+    gap: 10px;
     padding: 8px 0;
-
-    @media (max-width: 400px) {
-        grid-template-columns: 1fr;
-    }
+    width: 100%;
 }
 
 .service-card {
-    background: #f8fafc;
+    background: var(--bg-secondary);
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
     transition: all 0.2s;
     border: 2px solid transparent;
     position: relative;
+    display: flex;
+    flex-direction: column;
 
     &:hover {
         transform: translateY(-2px);
@@ -144,15 +190,14 @@
         background: #eff6ff;
     }
 
-    .service-image {
+    .service-image,
+    .service-placeholder {
         width: 100%;
         height: 80px;
         object-fit: cover;
     }
 
     .service-placeholder {
-        width: 100%;
-        height: 80px;
         background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
         display: flex;
         align-items: center;
@@ -167,45 +212,55 @@
     }
 
     .service-info {
-        padding: 8px 12px;
+        padding: 8px 10px;
+        flex: 1;
 
         h4 {
             margin: 0;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
+            line-height: 1.3;
         }
 
         .price {
             margin: 4px 0 0 0;
             font-weight: 600;
             color: #3b82f6;
+            font-size: 0.9rem;
         }
 
         .duration {
             margin: 2px 0 0 0;
             font-size: 0.75rem;
-            color: #94a3b8;
+            color: var(--text-secondary);
         }
     }
 
     .check-icon {
         position: absolute;
-        top: 8px;
-        right: 8px;
+        top: 6px;
+        right: 6px;
         color: #3b82f6;
-        background: white;
+        background: var(--bg-card);
         border-radius: 50%;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
     }
 }
 
 .confirm-services-btn {
     grid-column: 1 / -1;
     margin-top: 8px;
+    width: 100%;
 }
 
 // Date Chips
 .date-chips {
     padding: 8px 0;
+    display: flex;
+    flex-wrap: wrap; // Allow wrap
+    gap: 8px;
 
     mat-chip {
         cursor: pointer;
@@ -218,9 +273,12 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 8px 0;
+    justify-content: flex-start;
 
     button {
-        min-width: 70px;
+        min-width: 65px;
+        flex-grow: 1; // Fill available space
+        max-width: 100px;
     }
 }
 
@@ -230,24 +288,36 @@
     flex-direction: column;
     gap: 8px;
     padding: 8px 0;
+    width: 100%;
 
     button {
         justify-content: flex-start;
         gap: 8px;
+        width: 100%;
     }
 }
 
 // Confirmation
 .confirmation-card {
-    background: #f8fafc;
+    background: var(--bg-secondary);
     border-radius: 12px;
-    padding: 16px;
+    padding: 14px;
+    width: 100%;
+    box-sizing: border-box;
 
     .confirmation-actions {
         display: flex;
-        gap: 12px;
+        flex-direction: column; // Stack actions on mobile
+        gap: 8px;
         margin-top: 16px;
-        justify-content: center;
+
+        @media (min-width: 400px) {
+            flex-direction: row;
+        }
+
+        button {
+            width: 100%;
+        }
     }
 }
 
@@ -262,8 +332,8 @@
     gap: 4px;
 
     span {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
         background: #94a3b8;
         border-radius: 50%;
         animation: typing 1.4s infinite;
@@ -287,7 +357,7 @@
     }
 
     30% {
-        transform: translateY(-6px);
+        transform: translateY(-5px);
     }
 }
 
@@ -297,22 +367,40 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: white;
-    border-top: 1px solid #e2e8f0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--divider-color);
+    flex-shrink: 0;
+
+    .input-wrapper {
+        // Wrapper to center input max-width
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
     .message-input {
         flex: 1;
+        width: 100%;
 
         ::ng-deep .mat-mdc-form-field-subscript-wrapper {
             display: none;
+        }
+
+        ::ng-deep .mat-mdc-text-field-wrapper {
+            background-color: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 0 16px;
         }
     }
 }
 
 // Start Over
 .start-over {
-    padding: 16px;
+    padding: 12px;
     text-align: center;
-    background: white;
-    border-top: 1px solid #e2e8f0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--divider-color);
+    flex-shrink: 0;
 }

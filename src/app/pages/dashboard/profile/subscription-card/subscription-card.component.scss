@@ -1,0 +1,198 @@
+.subscription-card {
+    margin-top: 1.5rem;
+
+    mat-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+
+        .header-icon {
+            color: #2196f3;
+            font-size: 28px;
+            width: 28px;
+            height: 28px;
+        }
+    }
+
+    .spinner-container {
+        display: flex;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .subscription-details {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    // Current Plan Badge
+    .current-plan-section {
+        .plan-badge {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+
+            mat-icon {
+                font-size: 32px;
+                width: 32px;
+                height: 32px;
+            }
+
+            .plan-label {
+                display: block;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                opacity: 0.8;
+            }
+
+            .plan-name {
+                display: block;
+                font-size: 1.2rem;
+                font-weight: 700;
+            }
+
+            &.free {
+                background: linear-gradient(135deg, #374151, #4b5563);
+                color: white;
+            }
+
+            &.basic {
+                background: linear-gradient(135deg, #1565c0, #2196f3);
+                color: white;
+            }
+
+            &.regular {
+                background: linear-gradient(135deg, #7c3aed, #a78bfa);
+                color: white;
+            }
+        }
+
+        .plan-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+
+            .feature {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.9rem;
+
+                mat-icon {
+                    color: #22c55e;
+                    font-size: 18px;
+                    width: 18px;
+                    height: 18px;
+                }
+            }
+
+            @media (max-width: 500px) {
+                grid-template-columns: 1fr;
+            }
+        }
+    }
+
+    // Upgrade Section
+    .upgrade-section {
+        h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+
+            mat-icon {
+                color: #f59e0b;
+            }
+        }
+
+        .upgrade-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+
+            .upgrade-btn {
+                flex: 1;
+                min-width: 200px;
+                padding: 0.75rem 1.5rem;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 600;
+                font-size: 0.9rem;
+                transition: transform 0.2s, box-shadow 0.2s;
+
+                &:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                }
+
+                .price-tag {
+                    margin-left: auto;
+                    font-weight: 400;
+                    opacity: 0.85;
+                    font-size: 0.85rem;
+                }
+
+                &.basic {
+                    background: linear-gradient(135deg, #1565c0, #2196f3);
+                    color: white;
+                }
+
+                &.advanced {
+                    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+                    color: white;
+                }
+            }
+        }
+    }
+
+    // Subscription End Date
+    .subscription-end {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: rgba(33, 150, 243, 0.08);
+        border-radius: 10px;
+        border-left: 4px solid #2196f3;
+        font-size: 0.9rem;
+
+        mat-icon {
+            color: #2196f3;
+        }
+
+        strong {
+            color: #2196f3;
+        }
+    }
+
+    // Empty State
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+
+        mat-icon {
+            font-size: 40px;
+            width: 40px;
+            height: 40px;
+            opacity: 0.5;
+        }
+    }
+
+    mat-divider {
+        margin: 0.25rem 0 !important;
+    }
+}

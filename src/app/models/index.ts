@@ -25,6 +25,7 @@ export interface Sucursal {
     id: number;
     nombre: string;
     direccion: string;
+    telefono?: string;
     negocio_id: number;
     cuenta_email?: string;
     cuenta_password?: string;
@@ -46,11 +47,15 @@ export interface Cita {
     empleado_id: number;
     sucursal_id: number;
     cliente_id: number;
-    estado: 'confirmada' | 'cancelada' | 'completada' | 'pendiente' | 'en_proceso';
+    estado: 'confirmada' | 'cancelada' | 'completada' | 'pendiente' | 'en_proceso' | 'pendiente_pago';
     negocio_id: number;
     nombre_cliente_manual?: string;
     total_pagado?: number;
     fecha_completado?: string;
+    descripcion?: string;
+    fotos_referencia?: string[];
+    estado_pago?: 'pendiente' | 'pagado' | 'reembolsado';
+    monto_total?: number;
 
     // Joins
     empleados?: Empleado;
@@ -68,3 +73,25 @@ export interface HorarioSucursal {
     hora_descanso_inicio?: string; // HH:mm:ss
     duracion_descanso_minutos?: number;
 }
+
+export interface Plan {
+    id: number;
+    codigo: string;
+    nombre: string;
+    precio_mxn: number;
+    limite_sucursales: number;
+    limite_empleados_por_sucursal: number | null;
+    descripcion: string;
+    activo: boolean;
+}
+
+export interface NegocioSuscripcion {
+    negocio_id: string;
+    plan_id: number;
+    estado: 'trial' | 'active' | 'past_due' | 'canceled' | 'free';
+    tipo_chatbot?: 'web' | 'whatsapp';
+    fecha_fin_prueba?: string;
+    fecha_fin_periodo?: string;
+    planes?: Plan;
+}
+

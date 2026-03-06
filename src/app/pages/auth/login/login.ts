@@ -1,7 +1,7 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute, Params } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -12,6 +12,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../../services/auth';
 import { SupabaseService } from '../../../services/supabase.service';
+import { SubscriptionService } from '../../../services/subscription.service';
 import { QrScannerDialog } from '../../../components/qr-scanner-dialog/qr-scanner-dialog';
 
 @Component({
@@ -33,7 +34,7 @@ import { QrScannerDialog } from '../../../components/qr-scanner-dialog/qr-scanne
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
-export class Login {
+export class Login implements OnInit {
   loginForm: FormGroup;
   loading = false;
   hidePassword = true;
@@ -42,7 +43,9 @@ export class Login {
     private fb: FormBuilder,
     private authService: AuthService,
     private supabase: SupabaseService,
+    private subscriptionService: SubscriptionService,
     private router: Router,
+    private route: ActivatedRoute,
     private snackBar: MatSnackBar,
     private cdr: ChangeDetectorRef,
     private dialog: MatDialog
@@ -50,6 +53,14 @@ export class Login {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
+
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['error'] === 'email_not_verified') {
+        this.snackBar.open('Por favor verifica tu correo electrónico antes de continuar.', 'Cerrar', { duration: 6000 });
+      }
     });
   }
 
@@ -74,6 +85,15 @@ export class Login {
       // Check if user has a business assigned
       const user = authData.user;
       if (user) {
+        // CHECK EMAIL VERIFICATION
+        if (!user.email_confirmed_at) {
+          // User hasn't verified their email
+          await this.authService.signOut(); // Sign them out
+          this.snackBar.open('Por favor verifica tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.', 'Cerrar', { duration: 6000 });
+          this.loading = false;
+          this.cdr.detectChanges();
+          return;
+        }
         const { data: profile, error: profileError } = await this.supabase.client
           .from('usuarios_perfiles')
           .select('negocio_id, rol, sucursal_id')
@@ -96,9 +116,28 @@ export class Login {
           localStorage.removeItem('sucursalId');
           this.router.navigate(['/onboarding']);
         } else {
-          // Owner with business - go to dashboard
+          // Owner with business - CHECK SUBSCRIPTION
           localStorage.setItem('userRole', 'dueno');
           localStorage.removeItem('sucursalId');
+
+          // Check Subscription Status
+          const { data: subData, error: subError } = await this.subscriptionService.getSubscriptionStatus(profile.negocio_id);
+
+          if (subError && subError.code === 'PGRST116') {
+            // Has business but no subscription record
+            this.router.navigate(['/renew-subscription']);
+            return;
+          }
+
+          if (subData) {
+            const validStatuses = ['active', 'trialing', 'trial', 'free'];
+            if (!validStatuses.includes(subData.estado)) {
+              this.router.navigate(['/renew-subscription']);
+              return;
+            }
+          }
+
+          // If valid
           this.router.navigate(['/dashboard']);
         }
       } else {

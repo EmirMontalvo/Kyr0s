@@ -1,0 +1,97 @@
+<h2 mat-dialog-title>Detalles de la Cita</h2>
+
+<mat-dialog-content>
+    <mat-card class="details-card">
+        <mat-card-content>
+            <div class="details-container">
+
+                <!-- Header Info -->
+                <div class="header-info">
+                    <div class="date-time">
+                        <mat-icon>event</mat-icon>
+                        <span>{{ data.cita.fecha_hora_inicio | date:'fullDate' }}</span>
+                    </div>
+                    <div class="time-range">
+                        <mat-icon>schedule</mat-icon>
+                        <span>{{ formatTime(data.cita.fecha_hora_inicio) }} - {{ formatTime(data.cita.fecha_hora_fin)
+                            }}</span>
+                    </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <!-- Client Info -->
+                <div class="section client-section">
+                    <h3 class="section-title">Cliente</h3>
+                    <div class="info-row">
+                        <mat-icon>person</mat-icon>
+                        <span>{{ getClienteNombre() }}</span>
+                    </div>
+                    <div class="info-row" *ngIf="data.cita.clientes_bot?.telefono">
+                        <mat-icon>phone</mat-icon>
+                        <span>{{ data.cita.clientes_bot?.telefono }}</span>
+                    </div>
+                </div>
+
+                <!-- Employee Info -->
+                <div class="section">
+                    <h3 class="section-title">Barbero</h3>
+                    <div class="info-row">
+                        <mat-icon>content_cut</mat-icon>
+                        <span>{{ data.cita.empleados?.nombre || 'Sin asignar' }}</span>
+                    </div>
+                </div>
+
+                <!-- Description/Notes -->
+                <div class="section" *ngIf="data.cita.descripcion">
+                    <h3 class="section-title">Notas del Cliente</h3>
+                    <p class="description-text">{{ data.cita.descripcion }}</p>
+                </div>
+
+                <!-- Photos -->
+                <div class="section" *ngIf="data.cita.fotos_referencia && data.cita.fotos_referencia.length > 0">
+                    <h3 class="section-title">Fotos de Referencia</h3>
+                    <div class="photos-grid">
+                        <div class="photo-item" *ngFor="let photo of data.cita.fotos_referencia">
+                            <img [src]="photo" alt="Referencia" onclick="window.open(this.src, '_blank')">
+                        </div>
+                    </div>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <!-- Services -->
+                <div class="section services-section">
+                    <h3 class="section-title">Servicios</h3>
+                    <div class="service-list" *ngIf="data.cita.citas_servicios && data.cita.citas_servicios.length > 0">
+                        <div class="service-item" *ngFor="let serv of data.cita.citas_servicios">
+                            <span>{{ serv.servicios.nombre }}</span>
+                            <span class="price">${{ serv.precio_actual || serv.servicios.precio_base }}</span>
+                        </div>
+                    </div>
+                    <!-- Fallback for WhatsApp bot appointments -->
+                    <div class="service-list"
+                        *ngIf="!data.cita.citas_servicios || data.cita.citas_servicios.length === 0">
+                        <div class="service-item">
+                            <span>{{ getServicioNombre() }}</span>
+                        </div>
+                    </div>
+                    <div class="total-row">
+                        <strong>Total</strong>
+                        <strong>${{ getTotal() }}</strong>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="section status-section">
+                    <span class="status-badge" [class]="data.cita.estado">{{ data.cita.estado | uppercase }}</span>
+                </div>
+
+            </div>
+        </mat-card-content>
+    </mat-card>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cerrar</button>
+</mat-dialog-actions>

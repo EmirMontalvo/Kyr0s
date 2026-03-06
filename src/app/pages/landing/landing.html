@@ -1,0 +1,275 @@
+<div class="landing-page">
+    <!-- ===================== NAVBAR ===================== -->
+    <nav class="landing-nav" [class.scrolled]="isScrolled">
+        <div class="nav-content">
+            <a class="nav-logo" (click)="scrollTo('hero')">
+                <img src="assets/images/logo-icon.png" alt="Kyros Icon" class="nav-logo-img">
+                <img src="assets/images/logo-text.png" alt="KYROS" class="nav-logo-text-img">
+            </a>
+            <div class="nav-links">
+                <a (click)="scrollTo('features')">Funcionalidades</a>
+                <a (click)="scrollTo('how-it-works')">Cómo Funciona</a>
+                <a (click)="scrollTo('pricing')">Planes</a>
+                <a routerLink="/login" class="nav-btn-login">Iniciar Sesión</a>
+            </div>
+
+            <button class="mobile-menu-btn" (click)="toggleMenu()">
+                <mat-icon>{{ isMenuOpen ? 'close' : 'menu' }}</mat-icon>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" [class.open]="isMenuOpen">
+            <a (click)="scrollTo('features'); toggleMenu()">Funcionalidades</a>
+            <a (click)="scrollTo('how-it-works'); toggleMenu()">Cómo Funciona</a>
+            <a (click)="scrollTo('pricing'); toggleMenu()">Planes</a>
+            <a routerLink="/login" class="mobile-login-btn">Iniciar Sesión</a>
+        </div>
+    </nav>
+
+    <!-- ===================== HERO ===================== -->
+    <section class="hero" id="hero">
+        <div class="hero-glow hero-glow-1"></div>
+        <div class="hero-glow hero-glow-2"></div>
+
+        <div class="hero-content">
+            <div class="hero-badge-top">
+                <span class="pulse-dot"></span>
+                <span>La nueva era en gestión de barberías</span>
+            </div>
+
+            <div class="hero-brand">
+                <img src="assets/images/logo-icon.png" alt="Kyros" class="hero-logo-icon">
+                <img src="assets/images/logo-text.png" alt="KYROS" class="hero-logo-text">
+            </div>
+
+            <p class="hero-desc">
+                Agenda, clientes, sucursales y pagos en una plataforma unificada.
+                <span class="highlight">Potenciado con Inteligencia Artificial.</span>
+            </p>
+
+            <div class="hero-actions">
+                <a routerLink="/register" class="btn-glow">
+                    <span>Comenzar Gratis</span>
+                    <mat-icon>arrow_forward</mat-icon>
+                </a>
+                <a (click)="scrollTo('how-it-works')" class="btn-outline">
+                    Descubre cómo
+                </a>
+            </div>
+
+            <div class="hero-features-mini">
+                <div class="feature-item">
+                    <mat-icon>check_circle</mat-icon> Sin tarjeta
+                </div>
+                <div class="feature-item">
+                    <mat-icon>check_circle</mat-icon> Setup en 5 min
+                </div>
+                <div class="feature-item">
+                    <mat-icon>check_circle</mat-icon> IA Integrada
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-mockup-container">
+            <div class="glass-orb orb-1"></div>
+            <div class="glass-orb orb-2"></div>
+            <img src="assets/images/dashboard-mockup.png" alt="Kyros Dashboard Prototype" class="hero-mockup"
+                onerror="this.src='https://placehold.co/1000x600/1e293b/3b82f6?text=Kyros+Dashboard'">
+        </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section class="features" id="features">
+        <div class="section-container">
+            <div class="section-header fade-up">
+                <span class="gradient-tag">FUNCIONALIDADES PLUG & PLAY</span>
+                <h2>Todo tu negocio. Una sola pantalla.</h2>
+                <p>Deja atrás el papel y Excel. Herramientas diseñadas exclusivamente para optimizar barberías modernas.
+                </p>
+            </div>
+
+            <div class="features-bento-grid">
+                <div class="bento-card card-large">
+                    <div class="card-glow"></div>
+                    <div class="bento-icon"><mat-icon>smart_toy</mat-icon></div>
+                    <h3>Chatbot IA 24/7</h3>
+                    <p>Un asistente virtual que responde mensajes de WhatsApp, muestra tus servicios y agenda citas
+                        automáticamente sin que levantes un dedo.</p>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-glow"></div>
+                    <div class="bento-icon"><mat-icon>calendar_month</mat-icon></div>
+                    <h3>Agenda Inteligente</h3>
+                    <p>Calendario interactivo, sincronización en tiempo real y recordatorios para evitar inasistencias.
+                    </p>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-glow"></div>
+                    <div class="bento-icon"><mat-icon>storefront</mat-icon></div>
+                    <h3>Multisucursal</h3>
+                    <p>Controla varias sucursales y perfiles de barberos desde un panel de administrador central.</p>
+                </div>
+
+                <div class="bento-card card-wide">
+                    <div class="card-glow"></div>
+                    <div class="bento-content-flex">
+                        <div class="bento-text">
+                            <div class="bento-icon"><mat-icon>insights</mat-icon></div>
+                            <h3>Analíticas y Finanzas</h3>
+                            <p>Métricas precisas de ingresos diarios, desempeño de barberos, servicios más populares y
+                                retención de clientes. Toma decisiones rentables.</p>
+                        </div>
+                        <div class="bento-graphic">
+                            <div class="chart-bar h-60"></div>
+                            <div class="chart-bar h-80"></div>
+                            <div class="chart-bar h-40"></div>
+                            <div class="chart-bar h-100 accent"></div>
+                            <div class="chart-bar h-70"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== HOW IT WORKS ===================== -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-container">
+            <div class="section-header fade-up">
+                <span class="gradient-tag">ONBOARDING INSTANTÁNEO</span>
+                <h2>Tu barbería digital en minutos</h2>
+            </div>
+
+            <div class="timeline-steps">
+                <div class="step-item">
+                    <div class="step-marker">
+                        <div class="step-ring"></div>
+                        <span>1</span>
+                    </div>
+                    <div class="step-card glass-panel">
+                        <mat-icon class="step-icon">person_add</mat-icon>
+                        <h3>Crea tu cuenta</h3>
+                        <p>Regístrate gratis. Solo necesitas tu nombre y correo para empezar la revolución.</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-marker">
+                        <div class="step-ring"></div>
+                        <span>2</span>
+                    </div>
+                    <div class="step-card glass-panel">
+                        <mat-icon class="step-icon">settings_suggest</mat-icon>
+                        <h3>Configura tu espacio</h3>
+                        <p>Añade tus servicios, precios, sucursales y vincula fácilmente tu cuenta de Stripe.</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-marker">
+                        <div class="step-ring"></div>
+                        <span>3</span>
+                    </div>
+                    <div class="step-card glass-panel">
+                        <mat-icon class="step-icon">rocket_launch</mat-icon>
+                        <h3>Recibe clientes</h3>
+                        <p>Comparte el enlace de tu chatbot y deja que la Inteligencia Artificial agende todo por ti.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== PRICING ===================== -->
+    <section class="pricing" id="pricing">
+        <div class="section-container">
+            <div class="section-header fade-up">
+                <span class="gradient-tag">ESCALA SIN LÍMITES</span>
+                <h2>Inversión que se paga sola</h2>
+                <p>Elige el plan que se adapte al tamaño actual de tu negocio.</p>
+            </div>
+
+            <div class="pricing-cards">
+                <div class="price-tier glass-panel" *ngFor="let plan of plans" [class.pro-tier]="plan.highlighted">
+                    <div class="popular-tag" *ngIf="plan.highlighted">MÁS POPULAR</div>
+
+                    <div class="tier-header">
+                        <h3>{{ plan.name }}</h3>
+                        <div class="price">
+                            <span class="amount">{{ plan.price }}</span>
+                            <span class="period" *ngIf="plan.period">{{ plan.period }}</span>
+                        </div>
+                    </div>
+
+                    <ul class="tier-features">
+                        <li *ngFor="let feat of plan.features">
+                            <mat-icon class="check">check_circle</mat-icon>
+                            <span>{{ feat }}</span>
+                        </li>
+                        <li *ngFor="let exc of plan.excluded" class="excluded">
+                            <mat-icon class="x">close</mat-icon>
+                            <span>{{ exc }}</span>
+                        </li>
+                    </ul>
+
+                    <a routerLink="/register" class="tier-btn" [class.btn-glow]="plan.highlighted">
+                        {{ plan.price === 'Gratis' ? 'Prueba la magia gratis' : 'Elegir ' + plan.name }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== CTA FINAL ===================== -->
+    <section class="cta-final">
+        <div class="cta-box glass-panel">
+            <div class="cta-glow"></div>
+            <h2>El futuro de tu barbería está aquí.</h2>
+            <p>Únete a la nueva generación de administradores inteligentes.</p>
+            <img src="assets/images/logo-text.png" alt="KYROS" class="cta-logo">
+            <a routerLink="/register" class="btn-glow-large">
+                Crear cuenta ahora
+                <mat-icon>arrow_forward</mat-icon>
+            </a>
+        </div>
+    </section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="modern-footer">
+        <div class="footer-grid section-container">
+            <div class="footer-brand">
+                <div class="footer-logos">
+                    <img src="assets/images/logo-icon.png" alt="Kyros Icon" class="footer-icon">
+                    <img src="assets/images/logo-text.png" alt="KYROS" class="footer-text">
+                </div>
+                <p>El sistema operativo definitivo para salones y barberías modernas, potenciado por el futuro.</p>
+                <div class="social-links">
+                    <button mat-icon-button><mat-icon>language</mat-icon></button>
+                    <button mat-icon-button><mat-icon>share</mat-icon></button>
+                </div>
+            </div>
+
+            <div class="footer-links-group">
+                <div class="link-col">
+                    <h4>Producto</h4>
+                    <a (click)="scrollTo('features')">Características</a>
+                    <a (click)="scrollTo('how-it-works')">Tutorial</a>
+                    <a (click)="scrollTo('pricing')">Precios</a>
+                </div>
+                <div class="link-col">
+                    <h4>Compañía</h4>
+                    <a routerLink="/login">Iniciar Sesión</a>
+                    <a routerLink="/register">Regístrate</a>
+                    <a>Soporte</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Kyros SaaS. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+</div>

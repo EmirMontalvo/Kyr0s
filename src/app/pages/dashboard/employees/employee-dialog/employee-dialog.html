@@ -6,6 +6,25 @@
 </div>
 <mat-dialog-content>
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <!-- Image Upload Section -->
+        <div class="image-upload-section">
+            <label class="upload-label">Foto del Empleado (opcional)</label>
+            <div class="upload-area" (click)="fileInput.click()" [class.has-image]="imagePreview">
+                <img *ngIf="imagePreview" [src]="imagePreview" alt="Preview" class="image-preview">
+                <div *ngIf="!imagePreview" class="upload-placeholder">
+                    <mat-icon>cloud_upload</mat-icon>
+                    <span>Haz clic para subir una foto</span>
+                </div>
+                <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" hidden>
+            </div>
+            <button *ngIf="imagePreview" mat-button color="warn" type="button" (click)="removeImage()"
+                class="remove-btn">
+                <mat-icon>delete</mat-icon>
+                Eliminar foto
+            </button>
+            <mat-progress-bar *ngIf="uploading" mode="indeterminate"></mat-progress-bar>
+        </div>
+
         <mat-form-field appearance="outline" class="full-width">
             <mat-label>Nombre Completo</mat-label>
             <input matInput formControlName="nombre" placeholder="Ej: Juan Pérez">

@@ -19,6 +19,7 @@ export interface Empleado {
     sucursal_nombre?: string; // For display
     negocio_id: number;
     user_id?: string; // For auth deletion
+    imagen_url?: string;
 }
 
 export interface Sucursal {
@@ -29,6 +30,7 @@ export interface Sucursal {
     negocio_id: number;
     cuenta_email?: string;
     cuenta_password?: string;
+    imagen_url?: string;
 }
 
 export interface Cliente {

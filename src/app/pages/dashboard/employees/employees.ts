@@ -1,11 +1,12 @@
 import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../../services/supabase.service';
 import { AuthService } from '../../../services/auth';
 import { EmployeeDialog } from './employee-dialog/employee-dialog';
@@ -17,12 +18,13 @@ import { Empleado } from '../../../models';
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
+    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatTooltipModule
   ],
   templateUrl: './employees.html',
   styleUrl: './employees.scss',

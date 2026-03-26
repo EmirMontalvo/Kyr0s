@@ -1,0 +1,117 @@
+git : remote: warning: 
+See https://gh.io/lfs 
+for more information.  
+      
+En l?nea: 1 Car?cter: 1
++ git push origin main 
+> push_error.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (remote: warni   
+ ng...mation.          
+  :String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+remote: warning: File 
+KyrosBarberWeb - 
+Google Chrome 
+2026-02-22 
+00-26-52.mp4 is 82.34 
+MB; this is larger 
+than GitHub's 
+recommended maximum 
+file size of 50.00 MB  
+      
+remote: warning: 
+GH001: Large files 
+detected. You may want 
+to try Git Large File 
+Storage - https://git-l
+fs.github.com.        
+remote: error: GH013: 
+Repository rule 
+violations found for 
+refs/heads/main.       
+ 
+remote: 
+remote: - GITHUB PUSH 
+PROTECTION        
+remote:   ?????????????
+???????????????????????
+???????????????????????
+???????????????????????
+???????????????????????
+??????????????????     
+   
+remote:     Resolve 
+the following 
+violations before 
+pushing again        
+remote: 
+remote:     - Push 
+cannot contain secrets 
+       
+remote: 
+remote:             
+remote:      (?) Learn 
+how to resolve a 
+blocked push        
+remote:      https://do
+cs.github.com/code-secu
+rity/secret-scanning/wo
+rking-with-secret-scann
+ing-and-push-protection
+/working-with-push-prot
+ection-from-the-command
+-line#resolving-a-block
+ed-push        
+remote:             
+remote:             
+remote:       ?????? 
+Stripe Test API Secret 
+Key ???????????????????
+???????????????????????
+???????????????????????
+???????        
+remote:        
+locations:        
+remote:          - 
+commit: 50527c4b2e2d11e
+88a04c2e407ce18c01d7e6b
+41        
+remote:            
+path: 
+STRIPE_KEYS_HERE.env:2 
+       
+remote:             
+remote:        (?) To 
+push, remove secret 
+from commit(s) or 
+follow this URL to 
+allow the secret.      
+  
+remote:        https://
+github.com/EmirMontalvo
+/Kyr0s/security/secret-
+scanning/unblock-secret
+/3AZkZ9xBFcHfrDjH8EM9je
+KTYQj        
+remote:             
+remote: 
+remote: 
+To https://github.com/E
+mirMontalvo/Kyr0s
+ ! [remote rejected] 
+main -> main (push 
+declined due to 
+repository rule 
+violations)
+error: failed to push 
+some refs to 'https://g
+ithub.com/EmirMontalvo/
+Kyr0s'

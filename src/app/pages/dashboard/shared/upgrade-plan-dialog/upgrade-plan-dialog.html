@@ -1,0 +1,25 @@
+<div class="upgrade-dialog">
+    <div class="upgrade-icon-container">
+        <mat-icon class="lock-icon">lock</mat-icon>
+    </div>
+
+    <h2 class="upgrade-title">Función no disponible</h2>
+
+    <p class="upgrade-message">
+        Para acceder a <strong>{{ featureName }}</strong> necesitas mejorar tu plan.
+    </p>
+
+    <p class="upgrade-hint" *ngIf="showUpgradeButton">
+        Mejora tu plan desde tu perfil para desbloquear todas las funcionalidades.
+    </p>
+
+    <div class="upgrade-actions">
+        <button mat-stroked-button class="btn-accept" (click)="close()">
+            Aceptar
+        </button>
+        <button mat-flat-button color="primary" class="btn-upgrade" *ngIf="showUpgradeButton" (click)="upgradePlan()">
+            <mat-icon>upgrade</mat-icon>
+            Mejorar Plan
+        </button>
+    </div>
+</div>

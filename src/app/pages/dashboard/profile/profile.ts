@@ -318,6 +318,18 @@ export class Profile implements OnInit {
 
       if (error) throw error;
 
+      // Update business name if changed (owner only)
+      if (!this.isBranchUser && this.negocioId && this.form.value.nombre_negocio) {
+        const { error: negocioError } = await this.supabase.client
+          .from('negocios')
+          .update({ nombre: this.form.value.nombre_negocio })
+          .eq('id', this.negocioId);
+
+        if (negocioError) {
+          console.error('Error updating negocio name:', negocioError);
+        }
+      }
+
       // For branch users, also update branch name and phone
       if (this.isBranchUser && this.sucursalId) {
         await this.supabase.client

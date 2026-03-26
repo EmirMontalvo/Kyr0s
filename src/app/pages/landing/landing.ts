@@ -40,11 +40,9 @@ export class Landing {
                 'Sistema de reservas para clientes',
                 'Calendario de citas en tiempo real',
                 'Gestión de servicios y empleados',
-                'Estadísticas de ingresos',
-                'Actualizaciones automáticas',
-                'Pagos con Stripe'
+                'Actualizaciones automáticas'
             ],
-            excluded: ['Asistente IA'],
+            excluded: ['Estadísticas de ingresos', 'Pagos con Stripe', 'Asistente IA'],
             highlighted: false,
         },
         {

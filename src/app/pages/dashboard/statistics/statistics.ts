@@ -11,6 +11,10 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { SupabaseService } from '../../../services/supabase.service';
 import { AuthService } from '../../../services/auth';
 import { SidenavService } from '../../../services/sidenav.service';
+import { SubscriptionService } from '../../../services/subscription.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { UpgradePlanDialog } from '../shared/upgrade-plan-dialog/upgrade-plan-dialog';
 
 @Component({
     selector: 'app-statistics',
@@ -24,7 +28,8 @@ import { SidenavService } from '../../../services/sidenav.service';
         MatFormFieldModule,
         MatIconModule,
         MatButtonModule,
-        MatButtonToggleModule
+        MatButtonToggleModule,
+        MatDialogModule
     ],
     templateUrl: './statistics.html',
     styleUrl: './statistics.scss',
@@ -32,6 +37,7 @@ import { SidenavService } from '../../../services/sidenav.service';
 export class Statistics implements OnInit {
     loading = true;
     isOwner = false;
+    isRestricted = false;
     negocioId: string | null = null;
     sucursalId: number | null = null;
 
@@ -63,7 +69,10 @@ export class Statistics implements OnInit {
         private supabase: SupabaseService,
         private authService: AuthService,
         private cdr: ChangeDetectorRef,
-        private sidenavService: SidenavService
+        private sidenavService: SidenavService,
+        private subscriptionService: SubscriptionService,
+        private dialog: MatDialog,
+        private router: Router
     ) { }
 
     async ngOnInit() {
@@ -75,10 +84,29 @@ export class Statistics implements OnInit {
             this.sucursalId = parseInt(storedSucursalId, 10);
         }
 
-        console.log('[Statistics] Role:', userRole, 'isOwner:', this.isOwner, 'storedSucursalId:', storedSucursalId);
-
+        // Check plan restriction before loading anything
         await this.loadNegocioId();
+        if (this.negocioId) {
+            const { data: subData } = await this.subscriptionService.getSubscriptionStatus(this.negocioId);
+            if (subData && subData.plan_id === 1) {
+                this.isRestricted = true;
+                this.loading = false;
+                this.cdr.detectChanges();
+                // Open upgrade dialog
+                const isOwner = userRole !== 'sucursal';
+                this.dialog.open(UpgradePlanDialog, {
+                    width: '420px',
+                    disableClose: true,
+                    data: {
+                        showUpgradeButton: isOwner,
+                        featureName: 'Estadísticas'
+                    }
+                });
+                return; // Don't load statistics
+            }
+        }
 
+        console.log('[Statistics] Role:', userRole, 'isOwner:', this.isOwner, 'storedSucursalId:', storedSucursalId);
         console.log('[Statistics] After loadNegocioId - negocioId:', this.negocioId, 'sucursalId:', this.sucursalId);
 
         await this.loadStatistics();

@@ -1,6 +1,6 @@
 # 📋 KyrosBarber — Documentación Completa del Proyecto
 
-> **Última actualización:** Febrero 2026  
+> **Última actualización:** Marzo 2026  
 > **Propósito:** Documento de contexto para uso con IA. Describe toda la arquitectura, componentes, base de datos y flujos del sistema.
 
 ---
@@ -12,7 +12,7 @@
 ### Stack Tecnológico
 | Capa | Tecnología |
 |------|-----------|
-| **Frontend** | Angular 18 (Standalone Components, TypeScript) |
+| **Frontend** | Angular 21 (Standalone Components, TypeScript) |
 | **Backend / BaaS** | Supabase (PostgreSQL + Auth + Storage + Edge Functions) |
 | **Pagos** | Stripe (Checkout Sessions + Connect para sucursales) |
 | **IA del Dashboard** | Google Gemini 2.5 Flash via Edge Function |
@@ -409,7 +409,7 @@ Dueño abre "Editar Sucursal" → Botón "Conectar Banco"
 
 ---
 
-## 🏗️ Estado Actual del Proyecto (Febrero 2026)
+## 🏗️ Estado Actual del Proyecto (Marzo 2026)
 
 ### ✅ Funcionalidades Completadas
 - Autenticación completa (registro, login, verificación de email)
@@ -425,6 +425,7 @@ Dueño abre "Editar Sucursal" → Botón "Conectar Banco"
 - Vista de recepción
 - Backup de base de datos (71 KB, Febrero 2026)
 - Webhook de Stripe activo y funcionando
+- Corrección del mapeo de precios en `stripe-webhook` (Marzo 2026): $219→Básico, $499→Avanzado
 
 ### ⚠️ Pendiente / En Progreso
 - Pasar de modo prueba de Stripe a modo producción (live)
@@ -443,3 +444,45 @@ Dueño abre "Editar Sucursal" → Botón "Conectar Banco"
 | Stripe Dashboard (Live) | `https://dashboard.stripe.com` |
 | Webhook URL | `https://qyyhembukflbxjbctuav.supabase.co/functions/v1/stripe-webhook` |
 | AI Chat Function | `https://qyyhembukflbxjbctuav.supabase.co/functions/v1/ai-chat` |
+
+---
+
+## 🤖 Notas de Colaboración entre IAs
+
+> **Este proyecto se trabaja con múltiples IAs** (Antigravity/Google, Codex/OpenAI, Gemini, etc.). Esta sección sirve como contexto compartido para TODAS las IAs que intervengan.
+
+### Reglas para cualquier IA que trabaje en este proyecto
+
+1. **Leer este documento COMPLETO antes de hacer cambios** — Contiene toda la arquitectura, flujos y decisiones de diseño.
+2. **Actualizar este documento después de cada cambio significativo** — Seguir el workflow en `.agents/workflows/update-docs.md`.
+3. **No romper patrones existentes** — El proyecto usa Standalone Components de Angular, Supabase Edge Functions en Deno, y SCSS modular.
+4. **Respetar la estructura de carpetas** — Cada feature tiene su propia carpeta con `.ts`, `.html`, `.scss`.
+5. **No cambiar la base de datos sin documentar** — Cualquier cambio en tablas/columnas debe reflejarse en la sección de Base de Datos de este documento.
+6. **Usar `supabaseService`** para todas las operaciones de datos en el frontend (no crear clientes de Supabase directos).
+7. **Las Edge Functions usan Deno** — Imports por URL (no npm), `serve()` de `std@0.168.0`, y variables de entorno con `Deno.env.get()`.
+
+### ⚠️ Gotchas y Errores Conocidos (para evitar repetirlos)
+
+| Problema | Causa | Solución |
+|----------|-------|----------|
+| Plan incorrecto al pagar suscripción | El `stripe-webhook` mapeaba `amount_total` a `plan_id` con montos equivocados | Verificar que los montos en centavos coincidan con la tabla `planes` ($219=21900→plan 2, $499=49900→plan 3) |
+| Errores de `Deno` y `serve` en el IDE | TypeScript del IDE no reconoce imports Deno por URL | Son falsos positivos locales. Las Edge Functions compilan bien en Supabase |
+| `window is not defined` en SSR | Uso de `localStorage` durante SSR | Usar adapter de storage compatible con SSR para Supabase Auth |
+
+---
+
+## 📝 Change Log (Registro de Cambios)
+
+> Registro cronológico de cambios significativos. Cada IA que haga cambios debe agregar una entrada aquí.
+
+| Fecha | Cambio | IA / Autor |
+|-------|--------|------------|
+| Marzo 2026 | Corrección del mapeo de precios en `stripe-webhook`: $219→Básico (plan 2), $499→Avanzado (plan 3) | Antigravity |
+| Marzo 2026 | Corrección de suscripción de Oscar Franco en BD (plan_id 2→3) | Antigravity |
+| Marzo 2026 | Landing page 100% responsivo: nuevos breakpoints 768px y 400px, fix de line-height en h2, footer adaptado | Antigravity |
+| Marzo 2026 | Pricing section: 3 planes horizontales en desktop (grid 3 columnas) | Antigravity |
+| Marzo 2026 | Actualización de Angular 18→21 en documentación | Antigravity |
+| Marzo 2026 | Creación de sección de colaboración IA y Change Log | Antigravity |
+| Marzo 2026 | Restricción de Estadísticas y Pagos Stripe para Plan Gratuito: nuevo `UpgradePlanDialog`, interceptor en sidebar, bloqueo de Stripe Connect en branch-dialog | Antigravity |
+| Marzo 2026 | Validación de expiración de suscripción: check de `fecha_fin_prueba` y `fecha_fin_periodo` en login.ts y dashboard.ts. Usuarios expirados redirigen a `/renew-subscription` | Antigravity |
+

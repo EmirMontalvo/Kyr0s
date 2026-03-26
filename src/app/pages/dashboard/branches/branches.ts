@@ -1,13 +1,15 @@
 import { Component, OnInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SupabaseService } from '../../../services/supabase.service';
 import { AuthService } from '../../../services/auth';
+import { SubscriptionService } from '../../../services/subscription.service';
 import { BranchDialog } from './branch-dialog/branch-dialog';
 import { BranchHoursDialog } from './branch-hours-dialog/branch-hours-dialog';
 import { Sucursal } from '../../../models';
@@ -17,12 +19,13 @@ import { Sucursal } from '../../../models';
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
+    MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatTooltipModule
   ],
   templateUrl: './branches.html',
   styleUrl: './branches.scss',
@@ -32,10 +35,12 @@ export class Branches implements OnInit {
   dataSource: Sucursal[] = [];
   loading = false;
   negocioId: number | null = null;
+  planId: number = 1;
 
   constructor(
     private supabase: SupabaseService,
     private authService: AuthService,
+    private subscriptionService: SubscriptionService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private ngZone: NgZone,
@@ -55,6 +60,11 @@ export class Branches implements OnInit {
 
           if (profile) {
             this.negocioId = profile.negocio_id;
+            // Get plan ID for feature restrictions
+            const { data: subData } = await this.subscriptionService.getSubscriptionStatus(profile.negocio_id);
+            if (subData) {
+              this.planId = subData.plan_id || 1;
+            }
             await this.loadBranches();
           }
         } catch (error) {
@@ -97,8 +107,8 @@ export class Branches implements OnInit {
     const dialogRef = this.dialog.open(BranchDialog, {
       width: '400px',
       data: sucursal
-        ? { ...sucursal, negocio_id: this.negocioId }
-        : { negocio_id: this.negocioId }
+        ? { ...sucursal, negocio_id: this.negocioId, planId: this.planId }
+        : { negocio_id: this.negocioId, planId: this.planId }
     });
 
     dialogRef.afterClosed().subscribe(result => {

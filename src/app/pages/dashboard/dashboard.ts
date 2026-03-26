@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ConfirmationDialog } from './shared/confirmation-dialog/confirmation-dialog';
+import { UpgradePlanDialog } from './shared/upgrade-plan-dialog/upgrade-plan-dialog';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
@@ -45,6 +46,12 @@ export class Dashboard implements OnInit, OnDestroy {
   isHandset = false;
   sidenavHidden = false;
   private sidenavSub?: Subscription;
+
+  // Plan restriction
+  currentPlanId: number = 1;
+  userRole: string = 'dueño';
+  private readonly freeRestrictedRoutes: string[] = [];
+  private readonly freeRestrictedLabels: Record<string, string> = {};
 
   private readonly allMenuItems = [
     { label: 'Calendario', icon: 'calendar_today', route: '/dashboard/calendar' },
@@ -161,6 +168,9 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   private async processProfile(profile: any, user: any) {
+    // Store user role
+    this.userRole = profile?.rol || 'dueño';
+
     // Check if user needs onboarding (Owner with no business)
     if (profile?.rol !== 'sucursal') {
       if (!profile?.negocio_id) {
@@ -202,16 +212,84 @@ export class Dashboard implements OnInit, OnDestroy {
           this.router.navigate(['/renew-subscription']);
           return;
         }
+
+        // Check expiry dates
+        const now = new Date();
+        if (subData.estado === 'trialing' || subData.estado === 'trial') {
+          if (subData.fecha_fin_prueba && new Date(subData.fecha_fin_prueba) < now) {
+            console.log('Dashboard: Trial expired. fecha_fin_prueba:', subData.fecha_fin_prueba);
+            this.router.navigate(['/renew-subscription']);
+            return;
+          }
+        } else if (subData.estado === 'active' && subData.fecha_fin_periodo) {
+          if (new Date(subData.fecha_fin_periodo) < now) {
+            console.log('Dashboard: Subscription period expired. fecha_fin_periodo:', subData.fecha_fin_periodo);
+            this.router.navigate(['/renew-subscription']);
+            return;
+          }
+        }
+
+        // Store current plan ID for feature restrictions
+        this.currentPlanId = subData.plan_id || 1;
+        console.log('Dashboard: Current plan_id:', this.currentPlanId);
       }
 
       console.log('Dashboard: Subscription found and valid. Not redirecting.');
     } else {
-      console.log('Dashboard: User is sucursal. Skipping subscription check.');
+      // For sucursal users, get the plan from the owner's negocio
+      console.log('Dashboard: User is sucursal. Loading owner plan...');
+      if (profile?.negocio_id) {
+        const { data: subData } = await this.subscriptionService.getSubscriptionStatus(profile.negocio_id);
+        if (subData) {
+          // Check if owner's subscription is expired
+          const now = new Date();
+          if (subData.estado === 'trialing' || subData.estado === 'trial') {
+            if (subData.fecha_fin_prueba && new Date(subData.fecha_fin_prueba) < now) {
+              console.log('Dashboard: Owner trial expired for sucursal user.');
+              this.router.navigate(['/renew-subscription']);
+              return;
+            }
+          } else if (subData.estado === 'active' && subData.fecha_fin_periodo) {
+            if (new Date(subData.fecha_fin_periodo) < now) {
+              console.log('Dashboard: Owner subscription expired for sucursal user.');
+              this.router.navigate(['/renew-subscription']);
+              return;
+            }
+          }
+          this.currentPlanId = subData.plan_id || 1;
+          console.log('Dashboard: Sucursal owner plan_id:', this.currentPlanId);
+        }
+      }
     }
 
     // Only filter if user is a branch user
     if (profile?.rol === 'sucursal') {
       this.menuItems = this.menuItems.filter(item => item.route !== '/dashboard/branches');
+    }
+  }
+
+  // Handle menu item clicks with plan restriction check
+  onMenuClick(item: { label: string; icon: string; route: string }) {
+    // Check if route is restricted for free plan
+    if (this.currentPlanId === 1 && this.freeRestrictedRoutes.includes(item.route)) {
+      const isOwner = this.userRole !== 'sucursal';
+      this.dialog.open(UpgradePlanDialog, {
+        width: '420px',
+        data: {
+          showUpgradeButton: isOwner,
+          featureName: this.freeRestrictedLabels[item.route] || item.label
+        }
+      });
+      // Close sidenav on mobile
+      if (this.isHandset && this.drawer) {
+        this.drawer.close();
+      }
+      return;
+    }
+    // Navigate normally
+    this.router.navigate([item.route]);
+    if (this.isHandset && this.drawer) {
+      this.drawer.close();
     }
   }
 

@@ -135,6 +135,22 @@ export class Login implements OnInit {
               this.router.navigate(['/renew-subscription']);
               return;
             }
+
+            // Check expiry dates
+            const now = new Date();
+            if (subData.estado === 'trialing' || subData.estado === 'trial') {
+              // Free trial — check fecha_fin_prueba
+              if (subData.fecha_fin_prueba && new Date(subData.fecha_fin_prueba) < now) {
+                this.router.navigate(['/renew-subscription']);
+                return;
+              }
+            } else if (subData.estado === 'active' && subData.fecha_fin_periodo) {
+              // Paid plan — check fecha_fin_periodo
+              if (new Date(subData.fecha_fin_periodo) < now) {
+                this.router.navigate(['/renew-subscription']);
+                return;
+              }
+            }
           }
 
           // If valid

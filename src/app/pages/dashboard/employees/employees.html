@@ -13,46 +13,40 @@
         </video>
     </div>
 
-    <div class="table-container mat-elevation-z2">
-        <table mat-table [dataSource]="dataSource">
+    <div class="cards-grid" *ngIf="!loading">
+        <mat-card *ngFor="let empleado of dataSource" class="employee-card">
+            <div class="card-image">
+                <img *ngIf="empleado.imagen_url" [src]="empleado.imagen_url" [alt]="empleado.nombre">
+                <div *ngIf="!empleado.imagen_url" class="no-image">
+                    <mat-icon>person</mat-icon>
+                </div>
+            </div>
+            <mat-card-content>
+                <h3 class="employee-name">{{ empleado.nombre }}</h3>
+                <div class="employee-details">
+                    <span class="specialty">
+                        <mat-icon inline>content_cut</mat-icon>
+                        {{ empleado.especialidad }}
+                    </span>
+                </div>
+                <p class="employee-branch">
+                    <mat-icon inline>store</mat-icon>
+                    {{ empleado.sucursal_nombre }}
+                </p>
+            </mat-card-content>
+            <mat-card-actions>
+                <button mat-icon-button color="primary" (click)="openDialog(empleado)" matTooltip="Editar">
+                    <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteEmployee(empleado)" matTooltip="Eliminar">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </mat-card-actions>
+        </mat-card>
 
-            <!-- Nombre Column -->
-            <ng-container matColumnDef="nombre">
-                <th mat-header-cell *matHeaderCellDef> Nombre </th>
-                <td mat-cell *matCellDef="let element"> {{element.nombre}} </td>
-            </ng-container>
-
-            <!-- Especialidad Column -->
-            <ng-container matColumnDef="especialidad">
-                <th mat-header-cell *matHeaderCellDef> Especialidad </th>
-                <td mat-cell *matCellDef="let element"> {{element.especialidad}} </td>
-            </ng-container>
-
-            <!-- Sucursal Column -->
-            <ng-container matColumnDef="sucursal">
-                <th mat-header-cell *matHeaderCellDef> Sucursal </th>
-                <td mat-cell *matCellDef="let element"> {{element.sucursal_nombre}} </td>
-            </ng-container>
-
-            <!-- Acciones Column -->
-            <ng-container matColumnDef="acciones">
-                <th mat-header-cell *matHeaderCellDef> Acciones </th>
-                <td mat-cell *matCellDef="let element">
-                    <button mat-icon-button color="primary" (click)="openDialog(element)">
-                        <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deleteEmployee(element)">
-                        <mat-icon>delete</mat-icon>
-                    </button>
-                </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-
-            <tr class="mat-row" *matNoDataRow>
-                <td class="mat-cell" colspan="4">No hay empleados registrados</td>
-            </tr>
-        </table>
+        <div class="empty-state" *ngIf="dataSource.length === 0">
+            <mat-icon>people</mat-icon>
+            <p>No hay empleados registrados</p>
+        </div>
     </div>
 </div>

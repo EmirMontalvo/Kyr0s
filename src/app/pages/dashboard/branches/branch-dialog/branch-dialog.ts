@@ -6,6 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { RouterModule } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SupabaseService } from '../../../../services/supabase.service';
 import { AuthService } from '../../../../services/auth';
@@ -21,7 +23,9 @@ import { AuthService } from '../../../../services/auth';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatProgressBarModule,
+    RouterModule
   ],
   templateUrl: './branch-dialog.html',
   styleUrl: './branch-dialog.scss',
@@ -29,9 +33,14 @@ import { AuthService } from '../../../../services/auth';
 export class BranchDialog {
   form: FormGroup;
   loading = false;
+  uploading = false;
   isEdit = false;
   hidePassword = true;
   stripeLoading = false;
+
+  // Photo upload
+  selectedFile: File | null = null;
+  imagePreview: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -52,6 +61,43 @@ export class BranchDialog {
       cuenta_email: [data?.cuenta_email || '', [Validators.required, Validators.email]],
       cuenta_password: [data?.cuenta_password || '', this.isEdit ? [] : [Validators.required, Validators.minLength(6)]]
     });
+
+    // Set existing image preview
+    if (data?.imagen_url) {
+      this.imagePreview = data.imagen_url;
+    }
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona una imagen válida');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no puede ser mayor a 5MB');
+        return;
+      }
+
+      this.selectedFile = file;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.ngZone.run(() => {
+          this.imagePreview = e.target?.result as string;
+          this.cdr.detectChanges();
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeImage() {
+    this.imagePreview = null;
+    this.selectedFile = null;
   }
 
   async onSubmit() {
@@ -74,12 +120,37 @@ export class BranchDialog {
 
       const { nombre, direccion, telefono, cuenta_email, cuenta_password } = this.form.value;
 
+      // Upload image if selected
+      let imagenUrl = this.data?.imagen_url || null;
+      if (this.selectedFile) {
+        this.uploading = true;
+        const fileName = `${Date.now()}_${this.selectedFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+
+        const { error: uploadError } = await this.supabase.client.storage
+          .from('sucursales')
+          .upload(fileName, this.selectedFile, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          this.snackBar.open('Error al subir la imagen', 'Cerrar', { duration: 3000 });
+        } else {
+          const { data: urlData } = this.supabase.client.storage
+            .from('sucursales')
+            .getPublicUrl(fileName);
+          imagenUrl = urlData.publicUrl;
+        }
+        this.uploading = false;
+      } else if (!this.imagePreview && this.data?.imagen_url) {
+        imagenUrl = null;
+      }
+
       const branchData: any = {
         nombre,
         direccion,
         telefono,
         cuenta_email,
-        negocio_id: negocioId
+        negocio_id: negocioId,
+        imagen_url: imagenUrl
       };
 
       // Only update password if provided (for edit mode, empty means keep existing)

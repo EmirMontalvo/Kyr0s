@@ -81,9 +81,8 @@ serve(async (req) => {
         log(`Subscription payment. NegocioID: ${negocioId}, SubscriptionID: ${subscriptionId}, Amount: ${amountTotal}`);
 
         let planId = 1; // Default Free
-        if (amountTotal === 19900) planId = 2; // Old Basic?
-        else if (amountTotal === 49900) planId = 2; // Plan Básico ($499 MXN)
-        else if (amountTotal === 99900) planId = 3; // Plan Avanzado / Regular ($999 MXN)
+        if (amountTotal === 21900) planId = 2; // Plan Básico ($219 MXN)
+        else if (amountTotal === 49900) planId = 3; // Plan Avanzado ($499 MXN)
 
         log(`Determined Plan ID: ${planId}`);
 

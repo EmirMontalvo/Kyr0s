@@ -9,10 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ConfirmationDialog } from './shared/confirmation-dialog/confirmation-dialog';
-<<<<<<< HEAD
 import { UpgradePlanDialog } from './shared/upgrade-plan-dialog/upgrade-plan-dialog';
-=======
->>>>>>> 7b947f7f6b4b636bdd4a6c675c6014ea74785457
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
@@ -171,12 +168,9 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   private async processProfile(profile: any, user: any) {
-<<<<<<< HEAD
     // Store user role
     this.userRole = profile?.rol || 'dueño';
 
-=======
->>>>>>> 7b947f7f6b4b636bdd4a6c675c6014ea74785457
     // Check if user needs onboarding (Owner with no business)
     if (profile?.rol !== 'sucursal') {
       if (!profile?.negocio_id) {
@@ -218,7 +212,6 @@ export class Dashboard implements OnInit, OnDestroy {
           this.router.navigate(['/renew-subscription']);
           return;
         }
-<<<<<<< HEAD
 
         // Check expiry dates
         const now = new Date();
@@ -239,13 +232,10 @@ export class Dashboard implements OnInit, OnDestroy {
         // Store current plan ID for feature restrictions
         this.currentPlanId = subData.plan_id || 1;
         console.log('Dashboard: Current plan_id:', this.currentPlanId);
-=======
->>>>>>> 7b947f7f6b4b636bdd4a6c675c6014ea74785457
       }
 
       console.log('Dashboard: Subscription found and valid. Not redirecting.');
     } else {
-<<<<<<< HEAD
       // For sucursal users, get the plan from the owner's negocio
       console.log('Dashboard: User is sucursal. Loading owner plan...');
       if (profile?.negocio_id) {
@@ -270,9 +260,6 @@ export class Dashboard implements OnInit, OnDestroy {
           console.log('Dashboard: Sucursal owner plan_id:', this.currentPlanId);
         }
       }
-=======
-      console.log('Dashboard: User is sucursal. Skipping subscription check.');
->>>>>>> 7b947f7f6b4b636bdd4a6c675c6014ea74785457
     }
 
     // Only filter if user is a branch user
@@ -281,7 +268,6 @@ export class Dashboard implements OnInit, OnDestroy {
     }
   }
 
-<<<<<<< HEAD
   // Handle menu item clicks with plan restriction check
   onMenuClick(item: { label: string; icon: string; route: string }) {
     // Check if route is restricted for free plan
@@ -307,8 +293,6 @@ export class Dashboard implements OnInit, OnDestroy {
     }
   }
 
-=======
->>>>>>> 7b947f7f6b4b636bdd4a6c675c6014ea74785457
   logout() {
     const dialogRef = this.dialog.open(ConfirmationDialog, {
       width: '350px',

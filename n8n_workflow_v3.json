@@ -1,0 +1,43 @@
+{
+  "name": "🤖 Kyros Chatbot IA WhatsApp Telegram",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "telegram-trigger-1",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {},
+      "id": "whatsapp-trigger-1",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 500],
+      "webhookId": "whatsapp-kyros"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst item = items[0].json;\nconst isTelegram = item.message !== undefined;\n\nlet result;\nif (isTelegram) {\n  result = {\n    source: 'telegram',\n    userId: String(item.message.from.id),\n    chatId: item.message.chat.id,\n    message: item.message.text || '',\n    name: item.message.from.first_name || 'Cliente'\n  };\n} else {\n  result = {\n    source: 'whatsapp',\n    userId: item.From,\n    chatId: item.From,\n    message: item.Body || '',\n    name: item.ProfileName || 'Cliente'\n  };\n}\n\nreturn [{json: result}];"
+      },
+      "id": "code-1",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 400]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "WhatsApp Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

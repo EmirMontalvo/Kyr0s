@@ -1,0 +1,134 @@
+{
+  "name": "🤖 Kyros - Chatbot IA WhatsApp+Telegram",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "webhook-telegram",
+      "name": "Telegram Webhook",
+      "webhookId": "telegram-kyros",
+      "path": "telegram-kyros",
+      "responseMode": "responseNode"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unificar entrada de Telegram y WhatsApp\nconst input = $input.first().json;\n\nlet source, userId, message, chatId, contactInfo;\n\nif (input.message) {\n  source = 'telegram';\n  const msg = input.message;\n  userId = msg.from.id.toString();\n  chatId = msg.chat.id;\n  message = msg.text || '';\n  contactInfo = {\n    firstName: msg.from.first_name,\n    lastName: msg.from.last_name\n  };\n} else if (input.From) {\n  source = 'whatsapp';\n  userId = input.From;\n  chatId = userId;\n  message = input.Body || '';\n}\n\nreturn [{\n  json: {\n    source,\n    userId,\n    chatId,\n    message: message.toString().trim(),\n    contactInfo\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 0],
+      "id": "unify-input",
+      "name": "Unificar Entrada"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "clientes_bot",
+        "where": "={{ { telefono: $json.userId } }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "id": "supabase-get-client",
+      "name": "Buscar Cliente"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.3
+        },
+        "messages": {
+          "message": [
+            {
+              "role": "system",
+              "content": "Eres un asistente de IA para Kyros Barber. Procesa reservas de citas. EXTRAER datos en JSON: {intencion, datosExtraidos, siguientePaso, respuesta}. Pasos: welcome, services, pricing, details, name, phone, email, date, time, employee, summary, payment, done."
+            },
+            {
+              "role": "user",
+              "content": "=Mensaje: {{ $json.message }} | Cliente: {{ JSON.stringify($json.contactInfo) }}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [900, 0],
+      "id": "openai-process",
+      "name": "IA - Entender Cliente"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "servicios",
+        "where": "={{ { sucursal_id: 1 } }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "id": "supabase-get-services",
+      "name": "Obtener Servicios"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": "public",
+        "table": "empleados",
+        "where": "={{ { sucursal_id: 1 } }}"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "id": "supabase-get-employees",
+      "name": "Obtener Empleados"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar respuesta final\nconst { source, chatId } = $input.first().json;\nconst aiResult = $input.first().json.content || 'Bienvenido a Kyros! ¿Qué servicio te gustaría agendar?';\n\nlet response;\nif (source === 'telegram') {\n  response = {\n    method: 'sendMessage',\n    chat_id: chatId,\n    text: aiResult,\n    parse_mode: 'Markdown'\n  };\n} else {\n  response = {\n    To: chatId,\n    Body: aiResult\n  };\n}\n\nreturn [{ json: { response, source, chatId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 0],
+      "id": "prepare-response",
+      "name": "Preparar Respuesta"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.response) }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1700, 0],
+      "id": "respond-webhook",
+      "name": "Responder"
+    }
+  ],
+  "connections": {
+    "Telegram Webhook": {
+      "main": [[{"node": "Unificar Entrada", "type": "main", "index": 0}]]
+    },
+    "Unificar Entrada": {
+      "main": [[{"node": "Buscar Cliente", "type": "main", "index": 0}]]
+    },
+    "Buscar Cliente": {
+      "main": [[{"node": "IA - Entender Cliente", "type": "main", "index": 0}], [{"node": "Obtener Servicios", "type": "main", "index": 0}]]
+    },
+    "Obtener Servicios": {
+      "main": [[{"node": "Obtener Empleados", "type": "main", "index": 0}]]
+    },
+    "IA - Entender Cliente": {
+      "main": [[{"node": "Preparar Respuesta", "type": "main", "index": 0}]]
+    },
+    "Preparar Respuesta": {
+      "main": [[{"node": "Responder", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

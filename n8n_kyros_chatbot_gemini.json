@@ -1,0 +1,125 @@
+{
+  "name": "🤖 Kyros Chatbot IA - Gemini WhatsApp+Telegram",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "webhookId": "telegram-kyros-chatbot"
+    },
+    {
+      "parameters": {},
+      "id": "whatsapp-trigger",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 600],
+      "webhookId": "whatsapp-kyros-chatbot",
+      "path": "whatsapp-kyros-chatbot",
+      "responseMode": "responseNode"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst item = items[0].json;\nconst isTelegram = item.message !== undefined;\n\nlet platform, userId, chatId, text, name;\n\nif (isTelegram) {\n  platform = \"telegram\";\n  userId = String(item.message.from.id);\n  chatId = item.message.chat.id;\n  text = item.message.text || \"\";\n  name = item.message.from.first_name + \" \" + (item.message.from.last_name || \"\");\n} else {\n  platform = \"whatsapp\";\n  userId = item.From;\n  chatId = item.From;\n  text = item.Body || \"\";\n  name = item.ProfileName || \"Cliente\";\n}\n\nconst sessionId = platform + \"_\" + userId;\nreturn [{\n  json: { platform, userId, chatId, text: text.trim(), name: name.trim(), sessionId }\n}];"
+      },
+      "id": "parse-input",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\nconst prompt = `Eres el asistente virtual de Kyros Barber, una barberia premium. Ayudas a clientes a agendar citas de forma amigable y profesional.\n\nFLUJO DE 13 PASOS:\n1. BIENVENIDA - Saluda calurosamente, presenta Kyros como barberia premium, ofrece ver servicios\n2. SERVICIOS - Muestra catalogo de servicios (cortes, barba, combos, etc.)\n3. PRECIOS - Muestra desglose: Subtotal + Comision de procesamiento + Total a pagar\n4. DETALLES - Pide descripcion opcional del corte deseado y ofrece subir hasta 5 fotos de referencia\n5. NOMBRE - Solicita nombre completo del cliente\n6. TELEFONO - Solicita telefono de 10 digitos (obligatorio)\n7. EMAIL - Solicita email para enviar recibos de pago\n8. FECHA - Muestra dias disponibles en formato carrusel de botones\n9. HORA - Calcula disponibilidad y muestra slots disponibles (considerando duracion de servicios)\n10. EMPLEADO - Muestra lista de barberos disponibles o opcion Sin preferencia\n11. RESUMEN - Muestra tarjeta visual con: Cliente, Telefono, Fecha, Hora, Servicios, Barbero, Total\n12. PAGO - Genera link de pago Stripe con el email pre-llenado\n13. CONFIRMACION - Mensaje de exito, confirmacion de cita y boton para Nueva Cita\n\nDATOS ACTUALES:\n- Sesion: ${input.sessionId}\n- Cliente: ${input.name}\n- Mensaje recibido: ${input.text}\n- Plataforma: ${input.platform}\n\nResponde como el asistente de Kyros Barber en espanol.\n\nSi el cliente dice \"hola\", \"buenas\", \"que servicios tienen\", etc., da la bienvenida y ofrece ver el catalogo.\nSi el cliente menciona un servicio especifico, confirma y pregunta si desea agregar mas.\nSi el cliente proporciona datos personales, confirmalos y continua al siguiente paso.\n\nResponde de forma natural, amigable y profesional.`;\n\nreturn [{ json: { ...input, prompt } }];"
+      },
+      "id": "build-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 450]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyC7Boe6xSaW8foVYy47hBnM88ml4z3QGyA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }] }) }}"
+      },
+      "id": "gemini-api",
+      "name": "Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [950, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst candidates = response.candidates || [];\nconst text = candidates[0]?.content?.parts?.[0]?.text || \"¡Hola! Soy el asistente de Kyros Barber. ¿En que puedo ayudarte hoy?\";\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    aiResponse: text\n  }\n}];"
+      },
+      "id": "parse-gemini",
+      "name": "Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst message = input.aiResponse;\n\nlet output;\nif (input.platform === \"telegram\") {\n  output = {\n    chat_id: input.chatId,\n    text: message,\n    parse_mode: \"Markdown\"\n  };\n} else {\n  output = {\n    To: input.chatId,\n    Body: message\n  };\n}\n\nreturn [{ json: { output, platform: input.platform } }];"
+      },
+      "id": "format-output",
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 450]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1700, 450]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "WhatsApp Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "Parse Input": {
+      "main": [[{"node": "Build Prompt", "type": "main", "index": 0}]]
+    },
+    "Build Prompt": {
+      "main": [[{"node": "Gemini API", "type": "main", "index": 0}]]
+    },
+    "Gemini API": {
+      "main": [[{"node": "Parse Gemini Response", "type": "main", "index": 0}]]
+    },
+    "Parse Gemini Response": {
+      "main": [[{"node": "Format Output", "type": "main", "index": 0}]]
+    },
+    "Format Output": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

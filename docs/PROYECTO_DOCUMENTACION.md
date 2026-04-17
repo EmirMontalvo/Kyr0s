@@ -318,9 +318,30 @@ Todas las funciones están en: `supabase/functions/`
 ### Chatbot Web de Reservas (`/chat/:sucursalId`)
 - **Componente:** `ChatbotPage` + `BookingService`
 - **Público** (sin autenticación)
-- Flujo de reserva paso a paso: seleccionar servicio → ingresar datos → elegir fecha/hora → empleado → confirmar → pago (opcional)
 - Consulta directamente Supabase para disponibilidad de horarios
 - Puede generar link de pago Stripe para depósito
+
+**Flujo de Interacción UI (Paso a Paso):**
+1. **Bienvenida:** El asistente da la bienvenida a la sucursal correspondiente y ofrece el botón "Ver Servicios".
+2. **Selección de Servicios:** El catálogo muestra los servicios de la sucursal. El usuario elige uno o varios.
+3. **Desglose de Precios:** El asistente confirma los servicios elegidos y muestra un desglose de precio (Subtotal + Comisión de procesamiento + Total a pagar).
+4. **Detalles Opcionales:** Campo para agregar una descripción opcional y/o fotos de referencia (máx. 5).
+5. **Nombre:** El agente solicita ingresar el nombre completo del usuario.
+6. **Teléfono:** Solicita el número de teléfono (10 dígitos).
+7. **Correo Electrónico:** Solicita email para enviar recibos.
+8. **Fecha:** Pregunta la fecha deseada, mostrando opciones en un carrusel de botones (basado en disponibilidad).
+9. **Hora:** Al elegir fecha, despliega botones con las horas disponibles (dependiendo del cupo del personal para esos servicios).
+10. **Empleado / Barbero:** Muestra a los empleados asignados a ese servicio. Permite elegir uno en específico o "Sin preferencia" (se asigna automáticamente en la cita).
+11. **Resumen y Confirmación:** Muestra una tarjeta con el resumen visual:
+    - 👤 Cliente
+    - 📞 Teléfono
+    - 📅 Fecha
+    - 🕐 Hora
+    - ✂️ Servicios
+    - 👨🦱 Atendido por
+    - 💰 Total
+12. **Pago (Stripe):** Al dar clic en "Confirmar Cita", el sistema redirige al usuario a un enlace seguro de Stripe Checkout con el total exacto a pagar. **El correo electrónico del cliente aparece pre-llenado** automáticamente en la pasarela de pago, ya que fue proporcionado en el paso 7.
+13. **Confirmación Final:** Una vez que el pago es procesado con éxito, Stripe redirige automáticamente de vuelta a la ventana del chatbot web (`/chat/:sucursalId?payment=success...`), donde el asistente muestra un **mensaje de confirmación visual** indicando que la cita ha sido agendada exitosamente y que se enviará un recibo por correo.
 
 ### Chatbot IA del Dashboard
 - **Edge Function:** `ai-chat`

@@ -1,0 +1,92 @@
+{
+  "name": "🤖 Kyros - Chatbot IA WhatsApp+Telegram",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "telegram-kyros"
+    },
+    {
+      "parameters": {},
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 500],
+      "webhookId": "whatsapp-kyros",
+      "path": "whatsapp-kyros",
+      "responseMode": "responseNode"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst isTelegram = input.message !== undefined;\n\nlet result;\nif (isTelegram) {\n  result = {\n    source: 'telegram',\n    userId: input.message.from.id.toString(),\n    chatId: input.message.chat.id,\n    message: input.message.text || '',\n    name: input.message.from.first_name\n  };\n} else {\n  result = {\n    source: 'whatsapp',\n    userId: input.From,\n    chatId: input.From,\n    message: input.Body || '',\n    name: input.ProfileName || 'Cliente'\n  };\n}\n\nreturn [{json: result}];"
+      },
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "message": [
+            {
+              "role": "system",
+              "content": "Eres un asistente de Kyros Barber. Procesa reservas. Responde en JSON con: intencion, respuesta, datos."
+            },
+            {
+              "role": "user",
+              "content": "=Mensaje: {{ $json.message }}"
+            }
+          ]
+        }
+      },
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [750, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { source, chatId, name } = $input.first().json;\nconst aiResponse = $input.first().json.content || 'Hola! Soy el asistente de Kyros.';\n\nlet output;\nif (source === 'telegram') {\n  output = { chat_id: chatId, text: aiResponse };\n} else {\n  output = { To: chatId, Body: aiResponse };\n}\n\nreturn [{ json: { output, source, chatId, name } }];"
+      },
+      "name": "Format Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 400]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "WhatsApp Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "Parse Input": {
+      "main": [[{"node": "OpenAI", "type": "main", "index": 0}]]
+    },
+    "OpenAI": {
+      "main": [[{"node": "Format Output", "type": "main", "index": 0}]]
+    },
+    "Format Output": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

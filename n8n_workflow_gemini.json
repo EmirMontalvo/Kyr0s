@@ -1,0 +1,107 @@
+{
+  "name": "🤖 Kyros Chatbot con Gemini IA",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "telegram-1",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "webhookId": "telegram-kyros-v2"
+    },
+    {
+      "parameters": {},
+      "id": "whatsapp-1",
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 600],
+      "webhookId": "whatsapp-kyros-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst item = items[0].json;\nconst isTelegram = item.message !== undefined;\n\nlet platform, userId, chatId, text, name;\n\nif (isTelegram) {\n  platform = 'telegram';\n  userId = String(item.message.from.id);\n  chatId = item.message.chat.id;\n  text = item.message.text || '';\n  name = item.message.from.first_name + ' ' + (item.message.from.last_name || '');\n} else {\n  platform = 'whatsapp';\n  userId = item.From;\n  chatId = item.From;\n  text = item.Body || '';\n  name = item.ProfileName || 'Cliente';\n}\n\nconst sessionId = platform + '_' + userId;\nreturn [{\n  json: { platform, userId, chatId, text: text.trim(), name: name.trim(), sessionId }\n}];"
+      },
+      "id": "parse-1",
+      "name": "Parse Mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{"name": "key", "value": "={{ $credentials.geminiApiKey }}"}]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ {\n  contents: [{\n    role: \"user\",\n    parts: [{\n      text: `Eres el asistente de Kyros Barber. Procesa esta conversación de reserva.\n\nFLUJO DE 13 PASOS:\n1. BIENVENIDA - Saluda, presenta Kyros, ofrece 'Ver Servicios'\n2. SERVICIOS - Muestra catálogo con imágenes, cliente elige servicios\n3. PRECIOS - Desglose: Subtotal + Comisión + Total\n4. DETALLES - Descripción opcional + hasta 5 fotos\n5. NOMBRE - Solicita nombre completo\n6. TELEFONO - 10 dígitos obligatorio\n7. EMAIL - Para recibos de pago\n8. FECHA - Carrusel de días disponibles\n9. HORA - Slots disponibles según duración y empleados\n10. EMPLEADO - Lista de barberos o 'Sin preferencia'\n11. RESUMEN - Tarjeta visual con todos los datos\n12. PAGO - Link Stripe con email pre-llenado\n13. CONFIRMACION - Mensaje éxito + botón Nueva Cita\n\nSesión: ${$json.sessionId}\nMensaje cliente: ${$json.text}\nNombre: ${$json.name}`\n    }]\n  }],\n  generationConfig: {\n    temperature: 0.3,\n    maxOutputTokens: 1024\n  }\n} }}"
+      },
+      "id": "gemini-1",
+      "name": "Gemini IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [750, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer respuesta de Gemini\nconst response = $input.first().json;\nconst text = response.candidates?.[0]?.content?.parts?.[0]?.text || '¡Hola! Soy el asistente de Kyros. ¿En qué puedo ayudarte hoy?';\n\n// Intentar parsear JSON de la respuesta\nlet parsed;\ntry {\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { respuesta: text };\n} catch (e) {\n  parsed = { respuesta: text };\n}\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    aiResponse: parsed,\n    rawResponse: text\n  }\n}];"
+      },
+      "id": "parse-gemini",
+      "name": "Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar respuesta según plataforma\nconst input = $input.first().json;\nconst message = input.aiResponse?.respuesta || input.aiResponse || '¡Bienvenido a Kyros Barber! 🪒\\n\\nSoy tu asistente virtual y puedo ayudarte a agendar tu cita. ¿Te gustaría ver nuestros servicios?';\n\nlet output;\nif (input.platform === 'telegram') {\n  output = {\n    chat_id: input.chatId,\n    text: message,\n    parse_mode: 'Markdown'\n  };\n} else {\n  output = {\n    To: input.chatId,\n    Body: message\n  };\n}\n\nreturn [{ json: { output, platform: input.platform, chatId: input.chatId, sessionId: input.sessionId } }];"
+      },
+      "id": "format-1",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 450]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}"
+      },
+      "id": "respond-1",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1500, 450]
+    }
+  ],
+  "connections": {
+    "Telegram": {
+      "main": [[{"node": "Parse Mensaje", "type": "main", "index": 0}]]
+    },
+    "WhatsApp": {
+      "main": [[{"node": "Parse Mensaje", "type": "main", "index": 0}]]
+    },
+    "Parse Mensaje": {
+      "main": [[{"node": "Gemini IA", "type": "main", "index": 0}]]
+    },
+    "Gemini IA": {
+      "main": [[{"node": "Parse Gemini Response", "type": "main", "index": 0}]]
+    },
+    "Parse Gemini Response": {
+      "main": [[{"node": "Formatear Respuesta", "type": "main", "index": 0}]]
+    },
+    "Formatear Respuesta": {
+      "main": [[{"node": "Responder", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

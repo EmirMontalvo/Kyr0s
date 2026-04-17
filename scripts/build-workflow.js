@@ -1,0 +1,294 @@
+const fs = require('fs');
+
+const workflow = {
+  "name": "🤖 Kyros Chatbot - Gemini + Supabase Memoria",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "webhookId": "telegram-kyros-chatbot"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-kyros-chatbot",
+        "responseMode": "responseNode"
+      },
+      "id": "whatsapp-trigger",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 600],
+      "webhookId": "whatsapp-kyros-chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst item = items[0].json;\nconst isTelegram = item.message !== undefined;\n\nlet platform, userId, chatId, text, name;\n\nif (isTelegram) {\n  platform = \"telegram\";\n  userId = String(item.message.from.id);\n  chatId = item.message.chat.id;\n  text = item.message.text || \"\";\n  name = item.message.from.first_name + \" \" + (item.message.from.last_name || \"\");\n} else {\n  platform = \"whatsapp\";\n  userId = item.From;\n  chatId = item.From;\n  text = item.Body || \"\";\n  name = item.ProfileName || \"Cliente\";\n}\n\nconst sessionId = platform + \"_\" + userId;\nreturn [{\n  json: { platform, userId, chatId, text: text.trim(), name: name.trim(), sessionId }\n}];"
+      },
+      "id": "parse-input",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 450]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "table": "bot_sessions",
+        "returnAll": false,
+        "limit": 1,
+        "matchType": "anyRule",
+        "match": {
+          "matchRules": [
+            {
+              "propertyName": "session_id",
+              "operation": "equals",
+              "value": "={{ $node[\"Parse Input\"].json[\"sessionId\"] }}"
+            }
+          ]
+        }
+      },
+      "id": "get-bot-session",
+      "name": "Get Bot Session",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [600, 450]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "table": "sucursales",
+        "returnAll": true,
+        "matchType": "anyRule",
+        "match": {
+          "matchRules": [
+            {
+              "propertyName": "stripe_account_id",
+              "operation": "notEqual",
+              "value": "null"
+            }
+          ]
+        }
+      },
+      "id": "get-sucursales",
+      "name": "Get Sucursales Validas",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [800, 250]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "table": "servicios",
+        "returnAll": true,
+        "matchType": "anyRule",
+        "match": {
+          "matchRules": [
+            {
+              "propertyName": "sucursal_id",
+              "operation": "equals",
+              "value": "={{ $node[\"Get Bot Session\"].json[\"data\"]?.[\"sucursal_id\"] || 0 }}"
+            }
+          ]
+        }
+      },
+      "id": "get-servicios",
+      "name": "Get Servicios",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [800, 450]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "table": "empleados",
+        "returnAll": true,
+        "matchType": "anyRule",
+        "match": {
+          "matchRules": [
+            {
+              "propertyName": "sucursal_id",
+              "operation": "equals",
+              "value": "={{ $node[\"Get Bot Session\"].json[\"data\"]?.[\"sucursal_id\"] || 0 }}"
+            }
+          ]
+        }
+      },
+      "id": "get-empleados",
+      "name": "Get Empleados",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [800, 650]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ready: true } }];"
+      },
+      "id": "merge-queries",
+      "name": "Merge DB Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1000, 450],
+      "parameters": {
+        "mode": "wait"
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sessionItem = $items(\"Get Bot Session\")[0]?.json || {};\nconst sucursales = $items(\"Get Sucursales Validas\").map(i => i.json);\nconst servicios = $items(\"Get Servicios\").map(i => i.json);\nconst empleados = $items(\"Get Empleados\").map(i => i.json);\n\nconst input = $items(\"Parse Input\")[0].json;\n\nconst current_step = sessionItem.current_step || \"1\";\nconst sucursal_id = sessionItem.data?.sucursal_id || \"\";\n\nconst sucursalesList = sucursales.map(s => `- ID: ${s.id} | Nombre: ${s.nombre}`).join(\"\\n\");\nconst serviciosList = servicios.map(s => `- ${s.nombre} ($${s.precio_base}) - ${s.duracion_aprox_minutos} min`).join(\"\\n\");\nconst empleadosList = empleados.map(e => `- ${e.nombre} (${e.especialidad})`).join(\"\\n\");\n\nconst prompt = `Eres el asistente virtual de Kyros Barber, una barberia premium. Ayudas a clientes a agendar citas de forma amigable y profesional.\n\nFLUJO DE 14 PASOS:\n1. BIENVENIDA - Saluda calurosamente.\n2. SUCURSAL - Muestra la lista de sucursales disponibles y pide que elija una.\n3. SERVICIOS - Muestra catalogo de servicios de la sucursal seleccionada y pide que elija.\n4. PRECIOS - Muestra desglose: Subtotal + Comision + Total a pagar\n5. DETALLES - Pide descripcion opcional del corte deseado\n6. NOMBRE - Solicita nombre completo del cliente\n7. TELEFONO - Solicita telefono de 10 digitos (obligatorio)\n8. EMAIL - Solicita email para enviar recibos de pago\n9. FECHA - Muestra dias disponibles en formato carrusel de botones\n10. HORA - Calcula disponibilidad y muestra slots disponibles\n11. EMPLEADO - Muestra lista de barberos disponibles o opcion Sin preferencia\n12. RESUMEN - Muestra tarjeta visual con: Cliente, Telefono, Fecha, Hora, Servicios, Barbero, Total y Sucursal\n13. PAGO - Confirma que redirigira a pago.\n14. CONFIRMACION - Mensaje de exito, confirmacion de cita y boton para Nueva Cita\n\nESTADO ACTUAL DEL USUARIO:\n- Sesion: ${input.sessionId}\n- Cliente: ${input.name}\n- Mensaje recibido: ${input.text}\n- PASO ACTUAL: ${current_step}\n- SUCURSAL ELEGIDA ID: ${sucursal_id}\n\nSUCURSALES VÁLIDAS SELECCIONABLES:\n${sucursalesList || \"Sin datos\"}\n\nSERVICIOS DISPONIBLES EN LA SUCURSAL ELEGIDA:\n${serviciosList || \"No has elegido sucursal aún\"}\n\nBARBEROS DISPONIBLES EN LA SUCURSAL ELEGIDA:\n${empleadosList || \"No has elegido sucursal aún\"}\n\nINSTRUCCIONES CRITÍCAS:\n- El usuario está en el paso: ${current_step}.\n- Si la sucursal elegida está en blanco, el paso DEBE ser 1 o 2 y tu objetivo es que elijan una de la lista de SUCURSALES VALIDAS.\n- Si el cliente te indica una sucursal, guarda su ID en la propiedad \\\"sucursal_id\\\" de tu JSON.\n- NO uses markdown para responder. DEBES devolver UNICAMENTE un objeto JSON en bruto con este exacto formato:\n\n{\n  \"message\": \"<aqui tu respuesta al usuario, con saltos de linea si necesitas>\",\n  \"new_step\": \"<numero del paso al que avanzamos>\",\n  \"sucursal_id\": \"<ID de la sucursal seleccionada, vital para el paso 3 en adelante>\"\n}`;\n\nreturn [{ json: { ...input, prompt } }];"
+      },
+      "id": "build-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyC7Boe6xSaW8foVYy47hBnM88ml4z3QGyA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }] }) }}"
+      },
+      "id": "gemini-api",
+      "name": "Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst candidates = response.candidates || [];\nlet text = candidates[0]?.content?.parts?.[0]?.text || \"{}\";\n\n// Limpiar posibles backticks de markdown que el LLM devuelva\ntext = text.replace(/```json/g, '').replace(/```/g, '').trim();\n\nlet parsed = {};\ntry {\n  parsed = JSON.parse(text);\n} catch(e) {\n  parsed = {\n    message: \"Disculpa, hubo un pequeño error al entender tu solicitud. ¿Me lo repites?\",\n    new_step: \"1\",\n    sucursal_id: \"\"\n  }\n}\n\n// Mantenemos el session_id o lo que se haya heredado\nconst inputData = $items(\"Build Prompt\")[0].json;\n\nreturn [{\n  json: {\n    ...inputData,\n    aiResponse: parsed.message,\n    new_step: String(parsed.new_step || \"1\"),\n    sucursal_id: String(parsed.sucursal_id || \"\")\n  }\n}];"
+      },
+      "id": "parse-gemini",
+      "name": "Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 450]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "table": "bot_sessions",
+        "columns": "session_id,current_step,data",
+        "dataMode": "defineBelow",
+        "values": {
+          "session_id": "={{ $json.sessionId }}",
+          "current_step": "={{ $json.new_step }}",
+          "data": "={{ JSON.stringify({ sucursal_id: $json.sucursal_id }) }}"
+        }
+      },
+      "id": "upsert-session",
+      "name": "Upsert Session",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1800, 450]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.aiResponse }}"
+      },
+      "id": "telegram-send",
+      "name": "Send Telegram Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst message = input.aiResponse;\n\n// Para WhatsApp via webhook\nconst output = {\n  To: input.chatId,\n  Body: message\n};\n\nreturn [{ json: { output, platform: input.platform } }];"
+      },
+      "id": "format-whatsapp",
+      "name": "Format WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 600]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2200, 600]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "WhatsApp Trigger": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "Parse Input": {
+      "main": [[{"node": "Get Bot Session", "type": "main", "index": 0}]]
+    },
+    "Get Bot Session": {
+      "main": [
+        [
+          {"node": "Get Sucursales Validas", "type": "main", "index": 0},
+          {"node": "Get Servicios", "type": "main", "index": 0},
+          {"node": "Get Empleados", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Get Sucursales Validas": {
+      "main": [[{"node": "Merge DB Results", "type": "main", "index": 0}]]
+    },
+    "Get Servicios": {
+      "main": [[{"node": "Merge DB Results", "type": "main", "index": 1}]]
+    },
+    "Get Empleados": {
+      "main": [[{"node": "Merge DB Results", "type": "main", "index": 2}]]
+    },
+    "Merge DB Results": {
+      "main": [[{"node": "Build Prompt", "type": "main", "index": 0}]]
+    },
+    "Build Prompt": {
+      "main": [[{"node": "Gemini API", "type": "main", "index": 0}]]
+    },
+    "Gemini API": {
+      "main": [[{"node": "Parse Gemini Response", "type": "main", "index": 0}]]
+    },
+    "Parse Gemini Response": {
+      "main": [[{"node": "Upsert Session", "type": "main", "index": 0}]]
+    },
+    "Upsert Session": {
+      "main": [
+        [
+          {"node": "Send Telegram Message", "type": "main", "index": 0},
+          {"node": "Format WhatsApp", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Format WhatsApp": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+};
+
+fs.writeFileSync('n8n_kyros_chatbot_with_telegram.json', JSON.stringify(workflow, null, 2));
+console.log('Workflow multi-sucursal guardado en n8n_kyros_chatbot_with_telegram.json');

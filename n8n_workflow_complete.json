@@ -1,0 +1,169 @@
+{
+  "name": "🤖 Kyros Chatbot IA Completo - 13 Pasos",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "telegram-1",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {},
+      "id": "whatsapp-1",
+      "name": "WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 600],
+      "webhookId": "whatsapp-chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst item = items[0].json;\nconst isTelegram = item.message !== undefined;\nlet platform, userId, chatId, text, name, photo;\n\nif (isTelegram) {\n  platform = 'telegram';\n  userId = String(item.message.from.id);\n  chatId = item.message.chat.id;\n  text = item.message.text || item.message.caption || '';\n  name = item.message.from.first_name + ' ' + (item.message.from.last_name || '');\n  photo = item.message.photo ? item.message.photo[item.message.photo.length - 1].file_id : null;\n} else {\n  platform = 'whatsapp';\n  userId = item.From;\n  chatId = item.From;\n  text = item.Body || '';\n  name = item.ProfileName || 'Cliente';\n  photo = null;\n}\n\nconst sessionId = platform + '_' + userId;\nreturn [{\n  json: {\n    platform,\n    userId,\n    chatId,\n    text: text.trim(),\n    name: name.trim(),\n    photo,\n    sessionId\n  }\n}];"
+      },
+      "id": "parse-1",
+      "name": "Parse Mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "chat_histories",
+        "filterField": "session_id",
+        "filterValue": "={{ $json.sessionId }}"
+      },
+      "id": "supabase-get-1",
+      "name": "Obtener Historial",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [700, 450]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "message": [
+            {
+              "role": "system",
+              "content": "Eres el asistente virtual de Kyros Barber, una barbería premium. Ayudas a clientes a agendar citas.\n\nFLUJO DE 13 PASOS:\n1. BIENVENIDA - Saluda y ofrece 'Ver Servicios'\n2. SERVICIOS - Muestra catálogo, cliente elige uno o varios\n3. PRECIOS - Muestra: Subtotal + Comisión + Total\n4. DETALLES - Pide descripción opcional y hasta 5 fotos\n5. NOMBRE - Solicita nombre completo\n6. TELEFONO - Solicita teléfono (10 dígitos)\n7. EMAIL - Solicita email para recibos\n8. FECHA - Muestra días disponibles (botones)\n9. HORA - Calcula disponibilidad, muestra horas disponibles\n10. EMPLEADO - Muestra barberos disponibles o 'Sin preferencia'\n11. RESUMEN - Tarjeta visual con: Cliente, Teléfono, Fecha, Hora, Servicios, Barbero, Total\n12. PAGO - Genera link Stripe, redirige a pago\n13. CONFIRMACION - Mensaje de éxito y botón 'Nueva Cita'\n\nResponde en JSON:\n{\n  \"paso_actual\": \"nombre_del_paso\",\n  \"intencion\": \"intencion_detectada\",\n  \"datos_extraidos\": { ... },\n  \"respuesta\": \"mensaje_para_cliente\",\n  \"acciones\": [\"lista_de_acciones\"],\n  \"siguiente_paso\": \"nombre_siguiente_paso\"\n}\n\nBe personable and professional."
+            },
+            {
+              "role": "user",
+              "content": "=Sesión: {{ $json.sessionId }}\nMensaje: {{ $json.text }}\nCliente: {{ $json.name }}\nHistorial: {{ JSON.stringify($input.all()[0].json) }}"
+            }
+          ]
+        }
+      },
+      "id": "openai-1",
+      "name": "IA Procesar",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [950, 450]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "tableId": "servicios",
+        "returnAll": true,
+        "filter": "={{ { sucursal_id: 1, activo: true } }}"
+      },
+      "id": "supabase-services-1",
+      "name": "Cargar Servicios",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [700, 700]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "tableId": "empleados",
+        "returnAll": true,
+        "filter": "={{ { sucursal_id: 1, activo: true } }}"
+      },
+      "id": "supabase-employees-1",
+      "name": "Cargar Empleados",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [950, 700]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "tableId": "horarios_sucursal",
+        "returnAll": true,
+        "filter": "={{ { sucursal_id: 1 } }}"
+      },
+      "id": "supabase-hours-1",
+      "name": "Cargar Horarios",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1200, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guardar conversación en Supabase\nconst input = $input.first().json;\nconst aiResult = $input.all()[1].json;\n\nconst historyData = {\n  session_id: input.sessionId,\n  platform: input.platform,\n  user_id: input.userId,\n  messages: [\n    { role: 'user', content: input.text, timestamp: new Date().toISOString() },\n    { role: 'assistant', content: aiResult?.content || 'OK', timestamp: new Date().toISOString() }\n  ],\n  updated_at: new Date().toISOString()\n};\n\nreturn [{ json: historyData }];"
+      },
+      "id": "save-history-1",
+      "name": "Guardar Historial",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar respuesta según plataforma\nconst input = $input.first().json;\nconst aiResult = $input.all()[1].json;\nconst content = aiResult?.content || 'Hola! Soy el asistente de Kyros. ¿En qué puedo ayudarte?';\n\n// Intentar parsear JSON de la IA\nlet parsedResponse;\ntry {\n  parsedResponse = JSON.parse(content);\n} catch (e) {\n  parsedResponse = { respuesta: content };\n}\n\nconst message = parsedResponse.respuesta || content;\nlet output;\n\nif (input.platform === 'telegram') {\n  output = {\n    chat_id: input.chatId,\n    text: message,\n    parse_mode: 'Markdown'\n  };\n} else {\n  output = {\n    To: input.chatId,\n    Body: message\n  };\n}\n\nreturn [{\n  json: {\n    output,\n    platform: input.platform,\n    chatId: input.chatId\n  }\n}];"
+      },
+      "id": "format-1",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 450]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}"
+      },
+      "id": "respond-1",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1700, 450]
+    }
+  ],
+  "connections": {
+    "Telegram": {
+      "main": [[{"node": "Parse Mensaje", "type": "main", "index": 0}]]
+    },
+    "WhatsApp": {
+      "main": [[{"node": "Parse Mensaje", "type": "main", "index": 0}]]
+    },
+    "Parse Mensaje": {
+      "main": [[{"node": "Obtener Historial", "type": "main", "index": 0}], [{"node": "Cargar Servicios", "type": "main", "index": 0}]]
+    },
+    "Obtener Historial": {
+      "main": [[{"node": "IA Procesar", "type": "main", "index": 0}]]
+    },
+    "IA Procesar": {
+      "main": [[{"node": "Guardar Historial", "type": "main", "index": 0}]]
+    },
+    "Cargar Servicios": {
+      "main": [[{"node": "Cargar Empleados", "type": "main", "index": 0}]]
+    },
+    "Cargar Empleados": {
+      "main": [[{"node": "Cargar Horarios", "type": "main", "index": 0}]]
+    },
+    "Guardar Historial": {
+      "main": [[{"node": "Formatear Respuesta", "type": "main", "index": 0}]]
+    },
+    "Formatear Respuesta": {
+      "main": [[{"node": "Responder", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
